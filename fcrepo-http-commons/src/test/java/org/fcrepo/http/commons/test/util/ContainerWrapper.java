@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.test.util;
 
+import static org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory.createHttpServer;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.net.URI;
@@ -34,10 +34,7 @@ import org.fcrepo.http.commons.webxml.bind.InitParam;
 import org.fcrepo.http.commons.webxml.bind.Listener;
 import org.fcrepo.http.commons.webxml.bind.Servlet;
 import org.fcrepo.http.commons.webxml.bind.ServletMapping;
-import org.glassfish.grizzly.http.server.HttpHandler;
 import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.grizzly.http.server.Request;
-import org.glassfish.grizzly.http.server.Response;
 import org.glassfish.grizzly.servlet.FilterRegistration;
 import org.glassfish.grizzly.servlet.ServletRegistration;
 import org.glassfish.grizzly.servlet.WebappContext;
@@ -46,8 +43,11 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import com.sun.jersey.api.container.grizzly2.GrizzlyServerFactory;
-
+/**
+ * <p>ContainerWrapper class.</p>
+ *
+ * @author awoods
+ */
 public class ContainerWrapper implements ApplicationContextAware {
 
     private static final Logger logger = getLogger(ContainerWrapper.class);
@@ -79,14 +79,7 @@ public class ContainerWrapper implements ApplicationContextAware {
 
         final URI uri = URI.create("http://localhost:" + port);
 
-        server = GrizzlyServerFactory.createHttpServer(uri, new HttpHandler() {
-
-            @Override
-            public void service(final Request req, final Response res) throws Exception {
-                res.setStatus(404, "Not found");
-                res.getWriter().write("404: not found");
-            }
-        });
+        server = createHttpServer(uri);
 
         // create a "root" web application
         appContext = new WebappContext(o.displayName(), "/");
@@ -147,7 +140,7 @@ public class ContainerWrapper implements ApplicationContextAware {
         } catch (final Exception e) {
             logger.warn(e.getMessage(), e);
         } finally {
-            server.stop();
+            server.shutdownNow();
         }
     }
 

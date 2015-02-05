@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import javax.jcr.Node;
 /**
  * A binary storage policy definition and evaluation machinery
  * @author cbeer
- * @date Apr 25, 2013
+ * @since Apr 25, 2013
  */
 public interface StoragePolicy {
 
@@ -28,5 +28,5 @@ public interface StoragePolicy {
      * Evaluate the policy; if the policy matches, return the
      * binary storage hint. If not, return null.
      */
-    public String evaluatePolicy(Node n);
+    String evaluatePolicy(Node n);
 }

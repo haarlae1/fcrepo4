@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.exceptionhandlers;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
@@ -22,10 +21,14 @@ import static org.junit.Assert.assertEquals;
 import javax.jcr.security.AccessControlException;
 import javax.ws.rs.core.Response;
 
-import org.fcrepo.http.commons.exceptionhandlers.AccessControlExceptionMapper;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * <p>AccessControlExceptionMapperTest class.</p>
+ *
+ * @author awoods
+ */
 public class AccessControlExceptionMapperTest {
 
     private AccessControlExceptionMapper testObj;
@@ -37,8 +40,8 @@ public class AccessControlExceptionMapperTest {
 
     @Test
     public void testToResponse() {
-        AccessControlException input = new AccessControlException();
-        Response actual = testObj.toResponse(input);
+        final AccessControlException input = new AccessControlException();
+        final Response actual = testObj.toResponse(input);
         assertEquals(FORBIDDEN.getStatusCode(), actual.getStatus());
     }
 }

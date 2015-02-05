@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.exceptionhandlers;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static javax.ws.rs.core.Response.serverError;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import javax.ws.rs.WebApplicationException;
+import javax.jcr.RepositoryException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -30,31 +29,34 @@ import org.slf4j.Logger;
 
 /**
  * Catch all the exceptions!
+ *
+ * @author lsitu
+ * @author awoods
+ * @author cbeer
+ * @author fasseg
  */
 @Provider
 public class WildcardExceptionMapper implements ExceptionMapper<Exception> {
 
     Boolean showStackTrace = true;
 
-    private static final Logger logger =
-            getLogger(WildcardExceptionMapper.class);
+    private static final Logger LOGGER =
+        getLogger(WildcardExceptionMapper.class);
 
     @Override
     public Response toResponse(final Exception e) {
-
-        if (WebApplicationException.class.isAssignableFrom(e.getClass())) {
-            logger.info(
-                    "WebApplicationException intercepted by WildcardExceptionMapper: \n",
-                    e);
-            return ((WebApplicationException) e).getResponse();
-        }
 
         if (e.getCause() instanceof TransactionMissingException) {
             return new TransactionMissingExceptionMapper()
                     .toResponse((TransactionMissingException) e.getCause());
         }
 
-        logger.error("Exception intercepted by WildcardExceptionMapper: \n", e);
+        if ( e.getCause() instanceof RepositoryException) {
+            return new RepositoryExceptionMapper()
+                    .toResponse((RepositoryException)e.getCause());
+        }
+
+        LOGGER.info("Exception intercepted by WildcardExceptionMapper: \n", e);
         return serverError().entity(
                 showStackTrace ? getStackTraceAsString(e) : null).build();
     }

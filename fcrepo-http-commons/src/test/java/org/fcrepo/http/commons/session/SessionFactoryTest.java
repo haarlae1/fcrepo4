@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,19 +26,26 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import java.security.Principal;
 
 import javax.jcr.Credentials;
-import javax.jcr.LoginException;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.SecurityContext;
 
 import org.fcrepo.kernel.Transaction;
+import org.fcrepo.kernel.exception.TransactionMissingException;
 import org.fcrepo.kernel.services.TransactionService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.modeshape.jcr.api.ServletCredentials;
 
+import com.google.common.base.Throwables;
+
+/**
+ * <p>SessionFactoryTest class.</p>
+ *
+ * @author awoods
+ */
 public class SessionFactoryTest {
 
     SessionFactory testObj;
@@ -63,9 +69,6 @@ public class SessionFactoryTest {
     private HttpServletRequest mockRequest;
 
     @Mock
-    private SecurityContext mockContext;
-
-    @Mock
     private Principal mockUser;
 
     @Before
@@ -76,79 +79,56 @@ public class SessionFactoryTest {
     }
 
     @Test
-    public void testGetSessionWithNullPath() throws LoginException,
-            RepositoryException {
+    public void testGetSessionWithNullPath() throws RepositoryException {
         when(mockRequest.getPathInfo()).thenReturn(null);
+        when(mockRequest.getContextPath()).thenReturn("");
+        when(mockRepo.login(any(Credentials.class))).thenReturn(mockSession);
         testObj.getSession(mockRequest);
-        verify(mockRepo).login();
+        verify(mockRepo).login(any(ServletCredentials.class));
     }
 
-    @Test
-    public void testGetSessionAuthenticated() throws LoginException,
-            RepositoryException {
-        when(mockContext.getUserPrincipal()).thenReturn(mockUser);
-        final HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getPathInfo()).thenReturn("/some/path");
-        testObj.getSession(mockContext, mockRequest);
-        verify(mockRepo).login(any(Credentials.class));
-    }
-
-    @Test
-    public void testGetSessionUnauthenticated() throws LoginException,
-            RepositoryException {
+   @Test
+    public void testGetSessionUnauthenticated() throws RepositoryException {
         testObj.getInternalSession();
         verify(mockRepo).login();
     }
 
     @Test
-    public void testGetSessionWithWorkspace() throws LoginException,
-            RepositoryException {
-        when(mockRequest.getPathInfo()).thenReturn(
-                "/workspace:some-workspace/some/path");
-        testObj.getSession(mockRequest);
-        verify(mockRepo).login("some-workspace");
+    public void testCreateSession() throws RepositoryException {
+        when(mockRequest.getPathInfo()).thenReturn("/some/path");
+        testObj.createSession(mockRequest);
+        verify(mockRepo).login(any(Credentials.class));
     }
 
     @Test
-    public void testGetSessionWithTransaction() throws LoginException,
-            RepositoryException {
+    public void testGetSessionFromTransaction() {
         when(mockRequest.getPathInfo()).thenReturn("/tx:123/some/path");
         when(mockTx.getSession()).thenReturn(mock(Session.class));
-        when(mockTxService.getTransaction("123")).thenReturn(mockTx);
-        final Session session = testObj.getSession(mockRequest);
+        when(mockTxService.getTransaction("123", null)).thenReturn(mockTx);
+        final Session session = testObj.getSessionFromTransaction(mockRequest, "123");
         assertEquals(mockTx.getSession(), session);
     }
 
     @Test
-    public void testGetAuthenticatedSessionWithWorkspace()
-            throws LoginException, RepositoryException {
-
-        when(mockContext.getUserPrincipal()).thenReturn(mockUser);
-        when(mockRequest.getPathInfo()).thenReturn(
-                "/workspace:some-workspace/some/path");
-        testObj.getSession(mockContext, mockRequest);
-        verify(mockRepo).login(any(Credentials.class), eq("some-workspace"));
-    }
-
-    @Test
-    public void testGetAuthenticatedSessionWithTransaction()
-            throws LoginException, RepositoryException {
-
-        when(mockContext.getUserPrincipal()).thenReturn(mockUser);
+    public void testGetSessionThrowException() {
         when(mockRequest.getPathInfo()).thenReturn("/tx:123/some/path");
-        when(txSession.impersonate(any(Credentials.class))).thenReturn(
-                mockSession);
-        when(mockTx.getSession()).thenReturn(txSession);
-        when(mockTxService.getTransaction("123")).thenReturn(mockTx);
-
-        final Session session = testObj.getSession(mockContext, mockRequest);
-        assertEquals(mockSession, session);
-        verify(txSession).impersonate(any(Credentials.class));
+        when(mockTx.getSession()).thenReturn(mock(Session.class));
+        when(mockTxService.getTransaction("123", null)).thenThrow(
+                new TransactionMissingException(""));
+        try {
+            testObj.getSession(mockRequest);
+        } catch (final RuntimeException e) {
+            final Throwable rootCause = Throwables.getRootCause(e);
+            assertTrue("TransactionMissionException expected",
+                    rootCause instanceof TransactionMissingException);
+        }
     }
 
     @Test
-    public void testGetSessionProvider() {
-        when(mockContext.getUserPrincipal()).thenReturn(mockUser);
-        testObj.getSessionProvider(mockContext, mockRequest);
+    public void testGetEmbeddedIdTx() {
+        when(mockRequest.getPathInfo()).thenReturn("/tx:123/some/path");
+        final String txId = testObj.getEmbeddedId(mockRequest, SessionFactory.Prefix.TX);
+        assertEquals("txId should be 123", "123", txId);
     }
+
 }

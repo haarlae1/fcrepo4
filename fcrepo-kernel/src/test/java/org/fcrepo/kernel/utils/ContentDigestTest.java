@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.kernel.utils;
 
 import static java.net.URI.create;
@@ -23,6 +22,11 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+/**
+ * <p>ContentDigestTest class.</p>
+ *
+ * @author ksclarke
+ */
 public class ContentDigestTest {
 
     @Test

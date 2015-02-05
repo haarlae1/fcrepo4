@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.responses;
 
-import java.lang.annotation.ElementType;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
  * An annotation that hints to the HtmlProvider a template that should be used
  * to render a response.
+ *
+ * @author awoods
  */
-@Target({ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
+@Target({METHOD})
+@Retention(RUNTIME)
 public @interface HtmlTemplate {
 
     /**
-     * The name of the HMTL template to render for this method
-     * 
-     * @return
+     * The name of the HTML template to render for this method
      */
     String value();
 }

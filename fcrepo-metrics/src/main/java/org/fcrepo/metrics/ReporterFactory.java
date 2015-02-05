@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.metrics;
 
 import static com.codahale.metrics.MetricFilter.ALL;
@@ -21,7 +20,6 @@ import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.fcrepo.metrics.RegistryService.getMetrics;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import javax.management.MBeanServer;
@@ -36,27 +34,29 @@ import com.codahale.metrics.graphite.GraphiteReporter;
  * Helpers for making the upstream metrics reporters play nice with Springg
  * 
  * @author cbeer
- * @date Mar 22, 2013
+ * @since Mar 22, 2013
  */
 public class ReporterFactory {
 
-    private static final Logger logger = getLogger(ReporterFactory.class);
+    private static final Logger LOGGER = getLogger(ReporterFactory.class);
+
+    private RegistryService registryService = RegistryService.getInstance();
 
     /**
      * Start a new GraphiteReporter, with reports every minute
      * 
      * @param prefix graphite metrics prefix
      * @param g a graphite client instance
-     * @return
+     * @return a new GraphiteReporter
      */
     public GraphiteReporter getGraphiteReporter(final String prefix,
             final Graphite g) {
         final GraphiteReporter reporter =
-                GraphiteReporter.forRegistry(getMetrics()).prefixedWith(prefix)
+                GraphiteReporter.forRegistry(registryService.getMetrics()).prefixedWith(prefix)
                         .convertRatesTo(SECONDS).convertDurationsTo(
                                 MILLISECONDS).filter(ALL).build(g);
         reporter.start(1, MINUTES);
-        logger.debug("Started GraphiteReporter");
+        LOGGER.debug("Started GraphiteReporter");
         return reporter;
     }
 
@@ -64,17 +64,17 @@ public class ReporterFactory {
      * Publish metrics to JMX
      * 
      * @param prefix
-     * @return
+     * @return a JMXReporter
      */
     public JmxReporter getJmxReporter(final String prefix) {
         final MBeanServer mbs = getPlatformMBeanServer();
         final JmxReporter reporter =
-                JmxReporter.forRegistry(getMetrics()).registerWith(mbs)
+                JmxReporter.forRegistry(registryService.getMetrics()).registerWith(mbs)
                         .inDomain("org.fcrepo")
                         .convertDurationsTo(MILLISECONDS).convertRatesTo(
                                 SECONDS).filter(ALL).build();
         reporter.start();
-        logger.debug("Started JmxReporter");
+        LOGGER.debug("Started JmxReporter");
         return reporter;
     }
 

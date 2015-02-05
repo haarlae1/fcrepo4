@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.api.rdf;
 
 import static com.google.common.collect.ImmutableBiMap.of;
@@ -25,33 +24,35 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Map;
 
-import javax.jcr.RepositoryException;
 import javax.ws.rs.core.UriInfo;
 
-import org.fcrepo.http.commons.api.rdf.HttpTripleUtil;
-import org.fcrepo.http.commons.api.rdf.UriAwareResourceModelFactory;
-import org.fcrepo.kernel.FedoraResource;
-import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.models.FedoraResource;
+import org.fcrepo.kernel.identifiers.IdentifierConverter;
+import org.fcrepo.kernel.impl.FedoraResourceImpl;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.springframework.context.ApplicationContext;
 
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.DatasetFactory;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Resource;
 
+/**
+ * <p>HttpTripleUtilTest class.</p>
+ *
+ * @author awoods
+ */
 public class HttpTripleUtilTest {
 
     private HttpTripleUtil testObj;
 
-    private Dataset dataset;
 
     @Mock
     private UriInfo mockUriInfo;
 
     @Mock
-    private GraphSubjects mockSubjects;
+    private IdentifierConverter<Resource,FedoraResource> mockSubjects;
 
     @Mock
     private UriAwareResourceModelFactory mockBean1;
@@ -63,19 +64,17 @@ public class HttpTripleUtilTest {
     private ApplicationContext mockContext;
 
     @Mock
-    private FedoraResource mockResource;
+    private FedoraResourceImpl mockResource;
 
     @Before
     public void setUp() {
         initMocks(this);
         testObj = new HttpTripleUtil();
         testObj.setApplicationContext(mockContext);
-        dataset = DatasetFactory.create(createDefaultModel());
     }
 
     @Test
-    public void shouldAddTriplesFromRegisteredBeans()
-            throws RepositoryException {
+    public void shouldAddTriplesFromRegisteredBeans() {
         final Map<String, UriAwareResourceModelFactory> mockBeans =
                 of("doesnt", mockBean1, "matter", mockBean2);
         when(mockContext.getBeansOfType(UriAwareResourceModelFactory.class))
@@ -89,7 +88,8 @@ public class HttpTripleUtilTest {
                         eq(mockUriInfo), eq(mockSubjects))).thenReturn(
                 createDefaultModel());
 
-        testObj.addHttpComponentModelsForResource(dataset, mockResource,
+        final RdfStream rdfStream = new RdfStream();
+        testObj.addHttpComponentModelsForResourceToStream(rdfStream, mockResource,
                 mockUriInfo, mockSubjects);
         verify(mockBean1).createModelForResource(eq(mockResource),
                 eq(mockUriInfo), eq(mockSubjects));

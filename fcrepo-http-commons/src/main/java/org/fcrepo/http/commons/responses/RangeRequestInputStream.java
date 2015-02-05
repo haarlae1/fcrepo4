@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.responses;
 
 import java.io.FilterInputStream;
@@ -27,6 +26,8 @@ import org.apache.commons.io.input.ProxyInputStream;
 /**
  * An InputStream wrapper that skips N bytes and only returns
  * the data up to a certain length
+ *
+ * @author awoods
  */
 public class RangeRequestInputStream extends FilterInputStream {
 
@@ -48,9 +49,22 @@ public class RangeRequestInputStream extends FilterInputStream {
     }
 
 
+    /**
+     * An InputStream wrapper that skips bytes
+     * @param in
+     * @param skip
+     * @throws IOException
+     */
     private static class SkipInputStream extends ProxyInputStream {
+
+        /**
+         * An InputStream wrapper that always skips the first N bytes
+         * @param in
+         * @param skip
+         * @throws IOException
+         */
         public SkipInputStream(final InputStream in,
-                               long skip) throws IOException {
+                               final long skip) throws IOException {
             super(in);
             IOUtils.skip(in, skip);
         }

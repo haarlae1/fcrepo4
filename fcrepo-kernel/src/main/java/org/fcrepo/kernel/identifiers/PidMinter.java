@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,20 @@
  */
 package org.fcrepo.kernel.identifiers;
 
-import com.google.common.base.Function;
-
 /**
  * Defines the behavior of a component that can accept responsibility
- * for the creation of Fedora PIDs. Do not implement this interface directly.
- * Subclass {@link BasePidMinter} instead.
+ * for the creation of Fedora PIDs.
  *
  * @author eddies
- * @date Feb 7, 2013
+ * @author ajs6f
+ * @since Feb 7, 2013
  */
 public interface PidMinter {
 
     /**
      * Mint a new PID
+     * @return a new identifier
      */
     String mintPid();
 
-    /**
-     * Provide a helpful function to mint any number of PIDs
-     */
-    Function<Object, String> makePid();
 }

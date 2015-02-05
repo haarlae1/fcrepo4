@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import javax.jcr.Session;
 
 /**
  * Additional methods introduced by our transaction-aware session
+ *
+ * @author bbpennel
  */
 public interface TxSession extends Session {
     /**

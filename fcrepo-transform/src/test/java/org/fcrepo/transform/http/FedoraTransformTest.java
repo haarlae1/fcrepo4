@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,48 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.transform.http;
 
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.DatasetFactory;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import org.apache.jena.riot.WebContent;
-import org.fcrepo.kernel.FedoraResource;
-import org.fcrepo.kernel.rdf.GraphSubjects;
+import static org.apache.jena.riot.WebContent.contentTypeSPARQLQuery;
+import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
+import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
+import javax.jcr.Node;
+import javax.jcr.Session;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
+
+import org.fcrepo.kernel.identifiers.IdentifierConverter;
+import org.fcrepo.kernel.impl.FedoraResourceImpl;
 import org.fcrepo.kernel.services.NodeService;
-import org.fcrepo.http.commons.test.util.TestHelpers;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.fcrepo.transform.Transformation;
 import org.fcrepo.transform.TransformationFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
-import javax.jcr.Node;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
-import static org.fcrepo.http.commons.test.util.PathSegmentImpl.createPathList;
-import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
-import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
-
+/**
+ * <p>FedoraTransformTest class.</p>
+ *
+ * @author cbeer
+ */
 public class FedoraTransformTest {
 
     @Mock
     NodeService mockNodeService;
 
     @Mock
-    FedoraResource mockResource;
+    FedoraResourceImpl mockResource;
 
     @Mock
     Node mockNode;
@@ -69,43 +70,41 @@ public class FedoraTransformTest {
     private TransformationFactory mockTransformationFactory;
 
     @Mock
-    Transformation mockTransform;
+    Transformation<Object> mockTransform;
 
     @Before
-    public void setUp() throws NoSuchFieldException, RepositoryException {
+    public void setUp() {
         initMocks(this);
-        testObj = new FedoraTransform();
-        TestHelpers.setField(testObj, "nodeService", mockNodeService);
-        TestHelpers.setField(testObj, "transformationFactory", mockTransformationFactory);
+        testObj = spy(new FedoraTransform("testObject"));
+        setField(testObj, "nodeService", mockNodeService);
+        setField(testObj, "transformationFactory", mockTransformationFactory);
 
         this.uriInfo = getUriInfoImpl();
-        TestHelpers.setField(testObj, "uriInfo", uriInfo);
+        setField(testObj, "uriInfo", uriInfo);
         mockSession = mockSession(testObj);
-        TestHelpers.setField(testObj, "session", mockSession);
+        setField(testObj, "session", mockSession);
 
         when(mockResource.getNode()).thenReturn(mockNode);
+        when(mockResource.getPath()).thenReturn("/testObject");
+        doReturn(mockResource).when(testObj).getResourceFromPath("testObject");
     }
 
     @Test
-    public void testEvaluateTransform() throws Exception {
-        when(mockNodeService.getObject(mockSession, "/testObject")).thenReturn(mockResource);
-        final Model model = ModelFactory.createDefaultModel();
-        model.add(model.createResource("http://example.org/book/book1"),
-                     model.createProperty("http://purl.org/dc/elements/1.1/title"),
-                     model.createLiteral("some-title"));
-        final Dataset dataset = DatasetFactory.create(model);
-        when(mockResource.getPropertiesDataset(any(GraphSubjects.class))).thenReturn(dataset);
+    public void testEvaluateTransform() {
+        final RdfStream stream = new RdfStream();
+        when(mockResource.getTriples(any(IdentifierConverter.class), any(Class.class))).thenReturn(stream);
 
-        InputStream query = new ByteArrayInputStream(("SELECT ?title WHERE\n" +
-                                                          "{\n" +
-                                                          "  <http://example.org/book/book1> <http://purl.org/dc/elements/1.1/title> ?title .\n" +
-                                                          "} ").getBytes());
+        final InputStream query = new ByteArrayInputStream(("SELECT ?title WHERE\n" +
+                "{\n" +
+                "  <http://example.org/book/book1> <http://purl.org/dc/elements/1.1/title> ?title .\n" +
+                "} ").getBytes());
 
-        when(mockTransformationFactory.getTransform(MediaType.valueOf(WebContent.contentTypeSPARQLQuery), query)).thenReturn(mockTransform);
+        when(mockTransformationFactory.getTransform(MediaType.valueOf(contentTypeSPARQLQuery), query)).thenReturn(
+                mockTransform);
 
-        testObj.evaluateTransform(createPathList("testObject"), MediaType.valueOf(WebContent.contentTypeSPARQLQuery), query);
+        testObj.evaluateTransform(MediaType.valueOf(contentTypeSPARQLQuery), query);
 
-        verify(mockTransform).apply(dataset);
+        verify(mockTransform).apply(any(RdfStream.class));
     }
 
 

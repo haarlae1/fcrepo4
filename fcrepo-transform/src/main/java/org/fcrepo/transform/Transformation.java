@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.transform;
 
 import com.google.common.base.Function;
-import com.hp.hpl.jena.query.Dataset;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 
 import java.io.InputStream;
 
-public interface Transformation extends Function<Dataset, Object> {
+/**
+ * Generic interface for transforming a resource's properties
+ * to an implementation-defined type
+ *
+ * @author cbeer
+ */
+public interface Transformation<T> extends Function<RdfStream, T> {
 
     /**
-     * Execute a transform on a dataset
-     * @param dataset
-     * @return
+     * Execute a transform on an rdf stream
+     * @param stream
+     * @return transformed output
      */
-    Object apply(final Dataset dataset);
+    @Override
+    T apply(final RdfStream stream);
 
     /**
      * Get the Query the transformation is using
-     * @return
+     * @return query used by the transformation as an input stream
      */
     InputStream getQuery();
+
+    /**
+     * @return a new Transform of this type, for use as a factory
+     */
+    Transformation<T> newTransform(InputStream query);
 
 }

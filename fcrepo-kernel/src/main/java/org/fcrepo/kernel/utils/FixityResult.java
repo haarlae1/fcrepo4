@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,170 +15,67 @@
  */
 package org.fcrepo.kernel.utils;
 
-import static java.util.Objects.hash;
-
+import javax.jcr.RepositoryException;
 import java.net.URI;
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
- * Structure for presenting the results of a fixity check
- * (and any repair operations that may have occurred)
+ * @author bbpennel
+ * @since Feb 18, 2014
  */
-public class FixityResult {
+public interface FixityResult {
 
     /**
      * The possible fixity states (which may be ORed together later)
      */
     public static enum FixityState {
-        SUCCESS, REPAIRED, BAD_CHECKSUM, BAD_SIZE
-    }
-
-    /**
-     * This is a little weird here, and is vestigal from when
-     * this was a JAX-B model as well.
-     *
-     * The "state" of the fixity object is one of:
-     * - SUCCESS: the fixity check was declared successful
-     * - BAD_CHECKSUM and/or BAD_SIZE: either the checksum or the size of the
-     *       bitstream didn't match the stored size
-     * - REPAIRED and BAD_*: the checksum or size failed to match, but it
-     *       was automatically recovered from a different copy
-     */
-    public EnumSet<FixityState> status = EnumSet.noneOf(FixityState.class);
-
-
-    /**
-     * the size computed by the fixity check
-     * @todo make this private
-     */
-    public long computedSize;
-
-    /**
-     * the checksum computed by the fixity check
-     * @todo make this private
-     */
-    public URI computedChecksum;
-
-    private final LowLevelCacheEntry entry;
-
-    /**
-     * Initialize an empty fixity result
-     */
-    public FixityResult() {
-        this(null);
-    }
-
-    /**
-     * Prepare a fixity result for a Low-Level cache entry
-     * @param entry
-     */
-    public FixityResult(final LowLevelCacheEntry entry) {
-        this.entry = entry;
-    }
-
-    /**
-     * Prepare a fixity result given the computed checksum and size
-     * @param size
-     * @param checksum
-     */
-    public FixityResult(final long size, final URI checksum) {
-        this(null, size, checksum);
-    }
-
-    /**
-     * Prepare a fixity result with the expected size and checksum
-     * @param entry
-     * @param size
-     * @param checksum
-     */
-    public FixityResult(final LowLevelCacheEntry entry, final long size,
-                        final URI checksum) {
-        this.entry = entry;
-        computedSize = size;
-        computedChecksum = checksum;
+        SUCCESS, BAD_CHECKSUM, BAD_SIZE
     }
 
     /**
      * Get the identifier for the entry's store
-     * @return
+     * @return String
      */
-    public String getStoreIdentifier() {
-        return entry.getExternalIdentifier();
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-
-        boolean result = false;
-        if (obj instanceof FixityResult) {
-            final FixityResult that = (FixityResult) obj;
-            result =
-                computedSize == that.computedSize &&
-                computedChecksum.equals(that.computedChecksum);
-        }
-
-        return result;
-    }
-
-    @Override
-    public int hashCode() {
-        return hash(computedSize, computedChecksum);
-    }
-
-    @Override
-    public String toString() {
-        return "Fixity: checksum: " + computedChecksum.toString() + " / " +
-            Long.toString(computedSize);
-    }
-
-    /**
-     * Get the underlying Low-Level cache entry
-     * @return
-     */
-    public LowLevelCacheEntry getEntry() {
-        return entry;
-    }
+    String getStoreIdentifier() throws RepositoryException;
 
     /**
      * Check if the fixity result matches the given checksum URI
+     *
      * @param checksum
-     * @return
+     * @return fixity result matches the given checksum URI
      */
-    public boolean matches(final URI checksum) {
-        return computedChecksum.equals(checksum);
-    }
+    boolean matches(URI checksum);
 
     /**
      * Check if the fixity result matches the given size
+     *
      * @param size
-     * @return
+     * @return fixity result matches the given size
      */
-    public boolean matches(final long size) {
-        return computedSize == size;
-    }
+    boolean matches(long size);
 
     /**
      * Does the fixity entry match the given size and checksum?
+     *
      * @param size bitstream size in bytes
-     * @param checksum checksum URI in the form urn:DIGEST:RESULT
+     * @param checksum checksum URI
      * @return true if both conditions matched
      */
-    public boolean matches(final long size, final URI checksum) {
-        return matches(size) && matches(checksum);
-    }
+    boolean matches(long size, URI checksum);
 
     /**
-     * Was the fixity declared a success
-     * @return
+     * @return the status
      */
-    public boolean isSuccess() {
-        return status.contains(FixityState.SUCCESS);
-    }
+    Set<FixityState> getStatus(long size, URI checksum);
 
     /**
-     * Mark the fixity result as been automatically repaired
+     * @return the computed size
      */
-    public void setRepaired() {
-        status.add(FixityState.REPAIRED);
-    }
+    long getComputedSize();
+
+    /**
+     * @return the computed checksum
+     */
+    URI getComputedChecksum();
+
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,42 +15,69 @@
  */
 package org.fcrepo.kernel.observer;
 
+import static com.google.common.collect.Iterators.contains;
+import static java.util.Collections.singleton;
+import static javax.jcr.observation.Event.PROPERTY_CHANGED;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.observation.Event;
 
-import org.fcrepo.kernel.observer.FedoraEvent;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+/**
+ * <p>FedoraEventTest class.</p>
+ *
+ * @author ksclarke
+ */
 public class FedoraEventTest {
 
-    Event e = new FedoraEvent(new TestEvent(1, "Path", "UserId", "Identifier",
+    FedoraEvent e = new FedoraEvent(new TestEvent(1, "Path/Child", "UserId", "Identifier",
             ImmutableMap.of("1", "2"), "data", 0L));
 
 
+    @SuppressWarnings("unused")
     @Test(expected = java.lang.IllegalArgumentException.class)
-    public void testWrapNullEvent() throws Exception {
-        new FedoraEvent(null);
+    public void testWrapNullEvent() {
+        new FedoraEvent((Event)null);
+    }
+
+    @Test(expected = java.lang.IllegalArgumentException.class)
+    public void testWrapNullFedoraEvent() {
+        new FedoraEvent((FedoraEvent)null);
     }
 
     @Test
-    public void testGetType() throws Exception {
-        assertEquals(1, e.getType());
+    public void testGetType() {
+        assertEquals(singleton(1), e.getTypes());
     }
 
     @Test
     public void testGetPath() throws Exception {
-        assertEquals("Path", e.getPath());
+        assertEquals("Path/Child", e.getPath());
 
     }
 
     @Test
-    public void testGetUserID() throws Exception {
+    public void testGetPathWithProperties() throws Exception {
+        final FedoraEvent e = new FedoraEvent(new TestEvent(PROPERTY_CHANGED,
+                                                            "Path/Child",
+                                                            "UserId",
+                                                            "Identifier",
+                                                            ImmutableMap.of("1", "2"),
+                                                            "data",
+                                                            0L));
+        assertEquals("Path", e.getPath());
+    }
+
+    @Test
+    public void testGetUserID() {
 
         assertEquals("UserId", e.getUserID());
 
@@ -81,6 +108,36 @@ public class FedoraEventTest {
     public void testGetDate() throws Exception {
         assertEquals(0L, e.getDate());
 
+    }
+
+    @Test
+    public void testAddType() {
+        e.addType(PROPERTY_CHANGED);
+        assertEquals(2, e.getTypes().size());
+
+        assertTrue("Should contain: " + PROPERTY_CHANGED, contains(e.getTypes().iterator(), PROPERTY_CHANGED));
+        assertTrue("Should contain: 1", contains(e.getTypes().iterator(), 1));
+    }
+
+    @Test
+    public void testAddProperty() {
+        e.addProperty("prop");
+        assertEquals(1, e.getProperties().size());
+        assertEquals("prop", e.getProperties().iterator().next());
+    }
+
+    @Test
+    public void testToString() throws RepositoryException {
+        final String text = e.toString();
+        assertTrue("Should contain path: " + text, text.contains(e.getPath()));
+        assertTrue("Should contain info: " + text, text.contains(e.getInfo().toString()));
+
+        assertTrue("Should contain types: " + text, text.contains(Integer.toString(e.getTypes().iterator().next())));
+        assertTrue("Should contain date: " + text, text.contains(Long.toString(e.getDate())));
+
+        assertFalse("Should not contain user-data: " + text, text.contains(e.getUserData()));
+        assertFalse("Should not contain identifier: " + text, text.contains(e.getIdentifier()));
+        assertFalse("Should not contain user-id: " + text, text.contains(e.getUserID()));
     }
 
     class TestEvent implements Event {
@@ -120,7 +177,7 @@ public class FedoraEventTest {
 
 
         @Override
-        public String getPath() throws RepositoryException {
+        public String getPath() {
             return path;
         }
 
@@ -132,25 +189,25 @@ public class FedoraEventTest {
 
 
         @Override
-        public String getIdentifier() throws RepositoryException {
+        public String getIdentifier() {
             return identifier;
         }
 
 
         @Override
-        public Map<String, String> getInfo() throws RepositoryException {
+        public Map<String, String> getInfo() {
             return info;
         }
 
 
         @Override
-        public String getUserData() throws RepositoryException {
+        public String getUserData() {
             return userData;
         }
 
 
         @Override
-        public long getDate() throws RepositoryException {
+        public long getDate() {
             return date;
         }
     }

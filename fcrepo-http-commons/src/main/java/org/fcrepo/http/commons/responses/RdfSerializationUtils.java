@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,141 +13,101 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.responses;
 
-import static com.google.common.collect.ImmutableList.of;
-import static com.hp.hpl.jena.graph.Node.ANY;
+import static com.google.common.collect.ImmutableList.copyOf;
+import static com.google.common.collect.Iterables.transform;
 import static com.hp.hpl.jena.graph.NodeFactory.createURI;
-import static org.fcrepo.kernel.utils.JcrRdfTools.getRDFNamespaceForJcrNamespace;
-import static org.joda.time.format.DateTimeFormat.forPattern;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createProperty;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createResource;
+import static org.fcrepo.kernel.RdfLexicon.JCR_NAMESPACE;
+import static org.fcrepo.kernel.impl.rdf.JcrRdfTools.getRDFNamespaceForJcrNamespace;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Iterator;
-import java.util.Locale;
 
-import javax.ws.rs.core.MultivaluedMap;
-
-import org.fcrepo.kernel.rdf.GraphProperties;
-import org.fcrepo.kernel.rdf.SerializationUtils;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
-
-import com.hp.hpl.jena.datatypes.xsd.XSDDateTime;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.sparql.core.Quad;
-import com.hp.hpl.jena.sparql.util.Context;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.NodeIterator;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import org.slf4j.Logger;
 
 /**
  * Utilities to help with serializing a graph to an HTTP resource
+ *
+ * @author awoods
  */
 public class RdfSerializationUtils {
 
-    private static final Logger logger = getLogger(RdfSerializationUtils.class);
+    private static final Logger LOGGER = getLogger(RdfSerializationUtils.class);
+
+    /**
+     * No public constructor on utility class
+     */
+    private RdfSerializationUtils() {
+    }
 
     /**
      * The RDF predicate that will indicate the primary node type.
      */
     public static Node primaryTypePredicate =
-            createURI(getRDFNamespaceForJcrNamespace("http://www.jcp.org/jcr/1.0") +
+            createURI(getRDFNamespaceForJcrNamespace(JCR_NAMESPACE) +
                     "primaryType");
 
     /**
-     * The RDF predicate that will indicate the last-modified date of the node.
+     * The RDF predicate that will indicate the mixin types.
      */
-    public static Node lastModifiedPredicate =
-            createURI(getRDFNamespaceForJcrNamespace("http://www.jcp.org/jcr/1.0") +
-                    "lastModified");
+    public static Node mixinTypesPredicate =
+        createURI(getRDFNamespaceForJcrNamespace(JCR_NAMESPACE) +
+                  "mixinTypes");
 
-    /**
-     * DateTimeFormatter for RFC2822 (used in HTTP headers), e.g.:
-     *    Mon, 01 Jul 2013 07:51:23Z
-     */
-    protected static DateTimeFormatter RFC2822DATEFORMAT =
-            forPattern("EEE, dd MMM yyyy HH:mm:ss Z").withLocale(Locale.US)
-                    .withZone(DateTimeZone.forID("GMT"));
+    private static final Function<RDFNode, String> stringConverter = new Function<RDFNode, String>() {
+        @Override
+        public String apply(final RDFNode node) {
+            return node.asLiteral().getLexicalForm();
+        }
+    };
 
     /**
      * Get the very first value for a predicate as a string, or null if the
      * predicate is not used
-     * 
+     *
      * @param rdf
      * @param subject
      * @param predicate
-     * @return
+     * @return first value for the given predicate or null if not found
      */
-    static String getFirstValueForPredicate(final Dataset rdf,
+    public static String getFirstValueForPredicate(final Model rdf,
             final Node subject, final Node predicate) {
-        final Iterator<Quad> statements =
-                rdf.asDatasetGraph().find(ANY, subject, predicate, ANY);
+        final NodeIterator statements = rdf.listObjectsOfProperty(createResource(subject.getURI()),
+                createProperty(predicate.getURI()));
         // we'll take the first one we get
         if (statements.hasNext()) {
-            final Quad statement = statements.next();
-            logger.trace("Checking statement: {}", statement);
-            return statement.asTriple().getObject().getLiteral()
-                    .getLexicalForm();
-        } else {
-            logger.trace("No value found for predicate: {}", predicate);
-            return null;
+            return statements.next().asLiteral().getLexicalForm();
         }
+        LOGGER.trace("No value found for predicate: {}", predicate);
+        return null;
     }
 
     /**
-     * Get the subject of the dataset, given by the context's "uri"
-     * 
+     * Get all the values for a predicate as a string array, or null if the
+     * predicate is not used
+     *
      * @param rdf
-     * @return
+     * @param subject
+     * @param predicate
+     * @return all values for the given predicate
      */
-    static Node getDatasetSubject(final Dataset rdf) {
-        Context context = rdf.getContext();
-        String uri = context.getAsString(GraphProperties.URI_SYMBOL);
-        logger.debug("uri from context: {}", uri);
-        if (uri != null) {
-            return createURI(uri);
-        } else {
-            return null;
-        }
-    }
+    public static Iterator<String> getAllValuesForPredicate(final Model rdf,
+            final Node subject, final Node predicate) {
+        final NodeIterator objects =
+            rdf.listObjectsOfProperty(createResource(subject.getURI()),
+                createProperty(predicate.getURI()));
 
-    /**
-     * Set the cache control and last modified HTTP headers from data in the
-     * graph
-     * 
-     * @param httpHeaders
-     * @param rdf
-     */
-    static void setCachingHeaders(final MultivaluedMap<String,
-            Object> httpHeaders, final Dataset rdf) {
-        httpHeaders.put("Cache-Control", of((Object) "max-age=0"));
-        httpHeaders.put("Cache-Control", of((Object) "must-revalidate"));
-
-        logger.trace("Attempting to discover the last-modified date of the node for the resource in question...");
-        final Iterator<Quad> iterator =
-                rdf.asDatasetGraph().find(ANY, SerializationUtils.getDatasetSubject(rdf),
-                        lastModifiedPredicate, ANY);
-
-        if (!iterator.hasNext()) {
-            return;
-        }
-
-        final Object dateObject = iterator.next().getObject().getLiteralValue();
-
-        if (!(dateObject instanceof XSDDateTime)) {
-            logger.debug("Found last-modified date, but it was"
-                    + "not an XSDDateTime: {}", dateObject);
-
-            return;
-        }
-
-        final XSDDateTime lastModified = (XSDDateTime) dateObject;
-        logger.debug("Found last-modified date: {}", lastModified);
-        final String lastModifiedAsRdf2822 =
-                RFC2822DATEFORMAT
-                        .print(new DateTime(lastModified.asCalendar()));
-        httpHeaders.put("Last-Modified", of((Object) lastModifiedAsRdf2822));
+        final ImmutableList<RDFNode> copy = copyOf(objects);
+        return transform(copy, stringConverter).iterator();
     }
 
 }

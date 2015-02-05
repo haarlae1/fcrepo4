@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.auth.integration;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -26,8 +25,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -36,6 +34,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+/**
+ * <p>Abstract AbstractResourceIT class.</p>
+ *
+ * @author gregjan
+ */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/spring-test/test-container.xml")
 public abstract class AbstractResourceIT {
@@ -48,36 +51,35 @@ public abstract class AbstractResourceIT {
     }
 
     protected static final int SERVER_PORT = Integer.parseInt(System
-            .getProperty("test.port", "8080"));
+            .getProperty("fcrepo.test.port", "8080"));
 
     protected static final String HOSTNAME = "localhost";
 
     protected static final String serverAddress = "http://" + HOSTNAME +
             ":" + SERVER_PORT + "/";
 
-    protected final PoolingClientConnectionManager connectionManager =
-            new PoolingClientConnectionManager();
-
     protected static HttpClient client;
 
     public AbstractResourceIT() {
-        connectionManager.setMaxTotal(Integer.MAX_VALUE);
-        connectionManager.setDefaultMaxPerRoute(5);
-        connectionManager.closeIdleConnections(3, TimeUnit.SECONDS);
-        client = new DefaultHttpClient(connectionManager);
+        client =
+            HttpClientBuilder.create().setMaxConnPerRoute(5).setMaxConnTotal(
+                    Integer.MAX_VALUE).build();
     }
 
     protected static HttpPost postObjMethod(final String pid) {
         return new HttpPost(serverAddress + pid);
     }
 
+    protected static HttpPut putObjMethod(final String pid) {
+        return new HttpPut(serverAddress + pid);
+    }
+
     protected static HttpPost postObjMethod(final String pid,
             final String query) {
         if (query.equals("")) {
             return new HttpPost(serverAddress + pid);
-        } else {
-            return new HttpPost(serverAddress + pid + "?" + query);
         }
+        return new HttpPost(serverAddress + pid + "?" + query);
     }
 
     protected static HttpPost postDSMethod(final String pid,
@@ -85,7 +87,7 @@ public abstract class AbstractResourceIT {
             throws UnsupportedEncodingException {
         final HttpPost post =
                 new HttpPost(serverAddress + pid + "/" + ds +
-                        "/fcr:content");
+                        "/jcr:content");
         post.setEntity(new StringEntity(content));
         return post;
     }
@@ -95,7 +97,7 @@ public abstract class AbstractResourceIT {
             throws UnsupportedEncodingException {
         final HttpPut put =
                 new HttpPut(serverAddress + pid + "/" + ds +
-                        "/fcr:content");
+                        "/jcr:content");
 
         put.setEntity(new StringEntity(content));
         return put;
@@ -118,4 +120,11 @@ public abstract class AbstractResourceIT {
         return result;
     }
 
+    /**
+     * Gets a random (but valid) pid for use in testing. This pid is guaranteed
+     * to be unique within runs of this application.
+     */
+    protected static String getRandomUniquePid() {
+        return UUID.randomUUID().toString();
+    }
 }

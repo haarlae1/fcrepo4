@@ -1,10 +1,11 @@
 # Fedora 4
 
-[![Build Status](https://travis-ci.org/futures/fcrepo4.png?branch=master)](https://travis-ci.org/futures/fcrepo4)
+[![Build Status](https://travis-ci.org/fcrepo4/fcrepo4.png?branch=master)](https://travis-ci.org/fcrepo4/fcrepo4)
 
 [JavaDocs](http://docs.fcrepo.org/) | 
-[Fedora Futures Wiki](https://wiki.duraspace.org/display/FF/Fedora+Futures+Home) | 
-[Use cases](https://wiki.duraspace.org/display/FF/Use+Cases)
+[Fedora Wiki](https://wiki.duraspace.org/display/FF) | 
+[Use cases](https://wiki.duraspace.org/display/FF/Use+Cases) |
+[REST API](https://wiki.duraspace.org/display/FEDORA4x/RESTful+HTTP+API) |
 
 Technical goals:
 * Improved scalability and performance
@@ -19,12 +20,20 @@ System Requirements
 * Maven 3
 
 ```bash
-$ git clone https://github.com/futures/fcrepo4.git
+$ git clone https://github.com/fcrepo4/fcrepo4.git
 $ cd fcrepo4
 $ MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=1024m" mvn install
 $ cd fcrepo-webapp
 $ MAVEN_OPTS="-Xmx512m" mvn jetty:run
 ```
+
+If you have problems building fcrepo4 with the above settings, you may need to also pass
+options to the JaCoCo code coverage plugin:
+
+```bash
+$ MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=1024m" mvn -Djacoco.agent.it.arg="-XX:MaxPermSize=1024m -Xmx1024m" -Djacoco.agent.ut.arg="-XX:MaxPermSize=256m -Xmx1024m"  clean install
+```
+
 
 That's it! Your Fedora repository is up and running at: [http://localhost:8080/rest/](http://localhost:8080/rest/)
 

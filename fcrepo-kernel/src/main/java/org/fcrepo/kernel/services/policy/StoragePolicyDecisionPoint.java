@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,43 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.kernel.services.policy;
-
-import javax.jcr.Node;
 
 import java.util.List;
 
+import javax.jcr.Node;
+
 /**
- * Service Interface implementation for managing and using StoragePolicy
+ * Service Interface implementation for managing and using {@link org.fcrepo.kernel.services.policy.StoragePolicy}
  * @author osmandin
- * @date Aug 14, 2013
+ * @since Aug 14, 2013
  *
  */
-public interface StoragePolicyDecisionPoint {
-
-    /**
-     * Add a new storage policy
-     *
-     * @param p org.fcrepo.kernel.services.policy object
-     */
-    void addPolicy(final StoragePolicy p);
+public interface StoragePolicyDecisionPoint extends List<StoragePolicy> {
 
     /**
      * Given a JCR node (likely a jcr:content node), determine which storage
      * policy should apply
      *
      * @param n
-     * @return
+     * @return storage policy
      */
     String evaluatePolicies(final Node n);
-
-    /**
-     * Remove a storage policy
-     *
-     * @param p org.fcrepo.kernel.services.policy object
-     */
-    void removePolicy(final StoragePolicy p);
 
     /**
      * Explicitly set the policies this PDP should use
@@ -58,18 +43,4 @@ public interface StoragePolicyDecisionPoint {
      */
     void setPolicies(final List<StoragePolicy> policies);
 
-    /**
-     * @param policy
-     */
-    boolean contains(final StoragePolicy policy);
-
-    /**
-     * clear all policies
-     */
-    void removeAll();
-
-    /**
-     * @return policies size
-     */
-    int size();
 }

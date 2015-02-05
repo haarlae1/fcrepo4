@@ -1,5 +1,10 @@
+#* @vtlvariable name="topic" type="com.hp.hpl.jena.graph.Node" *#
+#* @vtlvariable name="rdf" type="com.hp.hpl.jena.sparql.core.DatasetGraph" *#
+#* @vtlvariable name="model" type="com.hp.hpl.jena.rdf.model.Model" *#
 <!DOCTYPE html>
 #set( $title = $helpers.getObjectTitle($rdf, $topic) )
+#set( $contentNode = $helpers.getContentNode($topic) )
+
 
 #parse("views/common.vsl")
 <html>
@@ -14,49 +19,86 @@
 <div  id="main" class="container" resource="$topic.getURI()">
     #parse("views/common-node-header.vsl")
 
+
     <div class="row">
-        <div class="span9">
 
-
+        <div class="col-md-12">
             #parse("views/common-breadcrumb.vsl")
+        </div>
+
+        <div class="col-md-3 col-md-push-9 clearfix">
+            <button id="toggle-actions" type="button" class="visible-xs visible-sm btn btn-danger" data-toggle="collapse" data-target=".actions">
+                <span>Toggle actions</span>
+            </button>
+
+        ## output actions
+            <div class="actions collapse visible-lg visible-md" id="actions">
+                #parse("views/common-node-actions.vsl")
+            </div>
+        </div>
+
+        <div class="col-md-9 col-md-pull-3">
+
             #parse("views/common-metadata.vsl")
 
         ## output triples for the topic node
-            <div class="well">
-                #triples($topic)
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">Properties</h4>
+                </div>
+                <div class="panel-body">
+                    #triples($topic)
+                </div>
+
+            ## output triples for the content node
+
+            #if ($rdf.find($contentNode, $nodeany, $nodeany).hasNext())
+                <div class="panel-heading">
+                    <a href="$contentNode" class="btn btn-success pull-right"><span class="glyphicon glyphicon-download"></span> Download</a>
+                    <h4 class="panel-title">Content Properties <br/><small><a href="$contentNode.getURI()">$esc.html($helpers.getObjectTitle($rdf, $contentNode))</a></small></h4>
+                </div>
+                <div class="panel-body">
+                    #triples($contentNode)
+                </div>
+            #end
             </div>
 
         ## output other nodes
 
-            <h2>Triples for other nodes</h2>
+        <h2>Other Resources</h2>
+        <div class="panel-group" id="accordion">
             #foreach($subject in $model.listSubjects())
-                #if( $subject != $topic )
-                    #if ( $subject.getURI() )
-                    <div class="well" resource="$subject.getURI()">
-                        <h3><a href="$subject.getURI()">$esc.html($helpers.getObjectTitle($rdf, $subject.asNode()))</a></h3>
-                        #triples($subject.asNode())
-                    </div>
-                    #else
-                    <div class="well" resource="$subject.getId()">
-                        <h3>$esc.html($helpers.getObjectTitle($rdf, $subject.asNode()))</h3>
-                        #triples($subject.asNode())
-                    </div>
+                #if ($subject.getURI() != $contentNode.getURI())
+                    #if( $subject != $topic)
+                        #if ( $subject.getURI() )
+                        <div class="panel panel-default" resource="$subject.getURI()">
+                            <div class="panel-heading collapsed" data-toggle="collapse" data-target="#$helpers.parameterize($subject.getURI())_triples" >
+                                <h3 class="panel-title ctitle"><a href="$subject.getURI()">$esc.html($helpers.getObjectTitle($rdf, $subject.asNode()))</a></h3>
+                            </div>
+                            <div class="panel-collapse collapse"  id="$helpers.parameterize($subject.getURI())_triples">
+                                <div class="panel-body">
+                                    #triples($subject.asNode())
+                                </div>
+                            </div>
+                        </div>
+                        #else
+                            <div class="panel panel-default" resource="$subject.getId()">
+                                <div class="panel-heading collapsed" data-toggle="collapse" data-target="#$helpers.parameterize($subject.getId())_triples" >
+                                    <h3 class="panel-title ctitle"><a href="$subject.getURI()">$esc.html($helpers.getObjectTitle($rdf, $subject.asNode()))</a></h3>
+                                </div>
+                                <div class="panel-collapse collapse"  id="$helpers.parameterize($subject.getId())_triples">
+                                    <div class="panel-body">
+                                        #triples($subject.asNode())
+                                    </div>
+                                </div>
+                            </div>
+                        #end
                     #end
                 #end
             #end
+            </div>
         </div>
 
-        <div class="span3">
-        ## output actions
-    ## output actions
-    <div class="actions">
-        #parse("views/common-node-actions.vsl")
-      <form action="javascript:updateFile()">
-          <input type="file" id="update_file"/>
-          <input type="submit" value="update content">
-      </form>
-    </div>
-        </div>
 
     </div>
 

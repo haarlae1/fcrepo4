@@ -2,14 +2,14 @@
 /*
  * Generic Fedora namespace
  */
-<fedora = 'http://fedora.info/definitions/v4/rest-api#'>
+<fedora = 'http://fedora.info/definitions/v4/repository#'>
 <nt = 'http://www.jcp.org/jcr/nt/1.0'>
 
 
 /*
  * Any Fedora resource.
  */
-[fedora:configuration] > nt:folder 
+[fedora:Configuration] > nt:folder
 
-[fedora:node_type_configuration] > nt:folder 
+[fedora:NodeTypeConfiguration] > nt:folder
 

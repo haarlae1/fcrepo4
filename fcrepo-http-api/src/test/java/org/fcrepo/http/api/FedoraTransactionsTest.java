@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.api;
 
-import static org.fcrepo.http.commons.test.util.PathSegmentImpl.createPathList;
 import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
 import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
-import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
-import javax.jcr.RepositoryException;
+import java.net.URISyntaxException;
+import java.security.Principal;
+
 import javax.jcr.Session;
+import javax.jcr.Workspace;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
 import org.fcrepo.kernel.Transaction;
-import org.fcrepo.kernel.TxAwareSession;
+import org.fcrepo.kernel.TxSession;
+import org.fcrepo.kernel.impl.TxAwareSession;
 import org.fcrepo.kernel.services.TransactionService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
+/**
+ * <p>FedoraTransactionsTest class.</p>
+ *
+ * @author awoods
+ */
 public class FedoraTransactionsTest {
+
+    private static final String USER_NAME = "test";
 
     private FedoraTransactions testObj;
 
@@ -55,12 +65,20 @@ public class FedoraTransactionsTest {
     @Mock
     private TransactionService mockTxService;
 
+    @Mock
+    private Principal mockPrincipal;
+
+    @Mock
+    private Workspace mockWorkspace;
+
     @Before
-    public void setUp() throws RepositoryException, NoSuchFieldException {
+    public void setUp() {
         initMocks(this);
         testObj = new FedoraTransactions();
-        mockSession =
-                TxAwareSession.newInstance(mockSession(testObj), "123");
+        final Session session = mockSession(testObj);
+        when(regularSession.getWorkspace()).thenReturn(mockWorkspace);
+        when(mockWorkspace.getName()).thenReturn("default");
+        mockSession = TxAwareSession.newInstance(session, "123");
         setField(testObj, "uriInfo", getUriInfoImpl());
         setField(testObj, "session", mockSession);
         setField(testObj, "txService", mockTxService);
@@ -68,65 +86,59 @@ public class FedoraTransactionsTest {
     }
 
     @Test
-    public void shouldStartANewTransaction() throws RepositoryException,
-            NoSuchFieldException {
+    public void shouldStartANewTransaction() throws URISyntaxException {
         setField(testObj, "session", regularSession);
-        when(mockTxService.beginTransaction(regularSession)).thenReturn(
-                mockTx);
-        testObj.createTransaction(createPathList(), mockRequest);
-        verify(mockTxService).beginTransaction(regularSession);
+        when(mockTxService.beginTransaction(regularSession, USER_NAME)).thenReturn(mockTx);
+        when(mockRequest.getUserPrincipal()).thenReturn(mockPrincipal);
+        when(mockPrincipal.getName()).thenReturn(USER_NAME);
+        testObj.createTransaction(null, mockRequest);
+        verify(mockTxService).beginTransaction(regularSession, USER_NAME);
     }
 
     @Test
-    public void shouldUpdateExpiryOnExistingTransaction()
-            throws RepositoryException {
-        when(mockTxService.getTransaction("123")).thenReturn(mockTx);
-        testObj.createTransaction(createPathList(), mockRequest);
+    public void shouldUpdateExpiryOnExistingTransaction() throws URISyntaxException {
+        when(mockTxService.getTransaction(Mockito.any(TxSession.class))).thenReturn(mockTx);
+        testObj.createTransaction(null, mockRequest);
         verify(mockTx).updateExpiryDate();
     }
 
     @Test
-    public void shouldCommitATransaction() throws RepositoryException {
-        testObj.commit(createPathList());
+    public void shouldCommitATransaction() {
+        testObj.commit(null);
         verify(mockTxService).commit("123");
     }
 
     @Test
-    public void shouldErrorIfTheContextSessionIsNotATransaction()
-            throws RepositoryException, NoSuchFieldException {
+    public void shouldErrorIfTheContextSessionIsNotATransaction() {
         setField(testObj, "session", regularSession);
-        final Response commit = testObj.commit(createPathList());
+        final Response commit = testObj.commit(null);
         assertEquals(400, commit.getStatus());
     }
 
     @Test
-    public void shouldErrorIfCommitIsNotCalledAtTheRepoRoot()
-            throws RepositoryException, NoSuchFieldException {
+    public void shouldErrorIfCommitIsNotCalledAtTheRepoRoot() {
         setField(testObj, "session", regularSession);
-        final Response commit = testObj.commit(createPathList("a"));
+        final Response commit = testObj.commit("a");
         assertEquals(400, commit.getStatus());
     }
 
     @Test
-    public void shouldRollBackATransaction() throws RepositoryException {
-        testObj.commit(createPathList());
+    public void shouldRollBackATransaction() {
+        testObj.commit(null);
         verify(mockTxService).commit("123");
     }
 
     @Test
-    public void
-            shouldErrorIfTheContextSessionIsNotATransactionAtRollback()
-                    throws RepositoryException, NoSuchFieldException {
+    public void shouldErrorIfTheContextSessionIsNotATransactionAtRollback() {
         setField(testObj, "session", regularSession);
-        final Response commit = testObj.rollback(createPathList());
+        final Response commit = testObj.rollback(null);
         assertEquals(400, commit.getStatus());
     }
 
     @Test
-    public void shouldErrorIfRollbackIsNotCalledAtTheRepoRoot()
-            throws RepositoryException, NoSuchFieldException {
+    public void shouldErrorIfRollbackIsNotCalledAtTheRepoRoot() {
         setField(testObj, "session", regularSession);
-        final Response commit = testObj.rollback(createPathList("a"));
+        final Response commit = testObj.rollback("a");
         assertEquals(400, commit.getStatus());
     }
 }

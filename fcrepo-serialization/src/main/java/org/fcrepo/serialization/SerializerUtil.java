@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.serialization;
 
 import org.slf4j.Logger;
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
@@ -31,6 +29,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Helper service that aggregates serializers and makes them accessible by key
+ *
+ * @author cbeer
  */
 @Component
 public class SerializerUtil implements ApplicationContextAware {
@@ -42,14 +42,13 @@ public class SerializerUtil implements ApplicationContextAware {
     private Map<String, FedoraObjectSerializer> serializerMap;
 
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext)
-        throws BeansException {
+    public void setApplicationContext(final ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
     /**
      * Get the list of Fedora serializer keys
-     * @return
+     * @return the list of Fedora serializer keys
      */
     public Set<String> keySet() {
         return getFedoraObjectSerializers().keySet();
@@ -58,7 +57,7 @@ public class SerializerUtil implements ApplicationContextAware {
     /**
      * Get a Fedora Object Serializer by its key
      * @param format
-     * @return
+     * @return FedoraObjectSerializer for the given format
      */
     public FedoraObjectSerializer getSerializer(final String format) {
         return getFedoraObjectSerializers().get(format);
@@ -66,7 +65,7 @@ public class SerializerUtil implements ApplicationContextAware {
 
     /**
      * Get the whole list of FedoraObjectSerializers
-     * @return
+     * @return map of all serializers with format as the key
      */
     public Map<String, FedoraObjectSerializer> getFedoraObjectSerializers() {
         return serializerMap;

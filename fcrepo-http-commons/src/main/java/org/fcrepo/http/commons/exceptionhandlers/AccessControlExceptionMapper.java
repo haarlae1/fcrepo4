@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.exceptionhandlers;
 
 import static javax.ws.rs.core.Response.status;
@@ -29,21 +28,23 @@ import org.slf4j.Logger;
 
 /**
  * Translate JCR AccessControlExceptions into HTTP 403 Forbidden errors
+ *
+ * @author lsitu
+ * @author awoods
+ * @author gregjan
  */
 @Provider
 public class AccessControlExceptionMapper implements
         ExceptionMapper<AccessControlException> {
 
-    private static final Logger logger =
-            getLogger(AccessControlExceptionMapper.class);
+    private static final Logger LOGGER =
+        getLogger(AccessControlExceptionMapper.class);
 
     @Override
     public Response toResponse(final AccessControlException e) {
-        logger.debug(
-                "AccessControlExceptionMapper intercepted exception: \n",
-                e);
+        LOGGER.debug("AccessControlExceptionMapper intercepted exception: \n",
+                        e);
 
         return status(FORBIDDEN).build();
     }
-
 }

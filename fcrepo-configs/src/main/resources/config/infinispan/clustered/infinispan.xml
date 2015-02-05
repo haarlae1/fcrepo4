@@ -1,0 +1,145 @@
+<infinispan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="urn:infinispan:config:6.0 http://www.infinispan.org/schemas/infinispan-config-6.0.xsd"
+            xmlns="urn:infinispan:config:6.0">
+
+  <global>
+
+    <globalJmxStatistics enabled="true" allowDuplicateDomains="true"/>
+
+    <!-- Defines the global settings shared by all caches -->
+    <transport clusterName="modeshape-cluster">
+      <properties>
+        <property name="configurationFile" value="${fcrepo.ispn.jgroups.configuration:config/jgroups-fcrepo-tcp.xml}"/>
+      </properties>
+    </transport>
+  </global>
+
+  <default>
+    <!--
+       Defines the default behavior for all caches, including those created dynamically (e.g., when a
+       repository uses a cache that doesn't exist in this configuration).
+     -->
+    <clustering mode="distribution">
+      <sync/>
+      <l1 enabled="false" lifespan="0" onRehash="false"/>
+      <hash numOwners="${fcrepo.ispn.numOwners:2}"/>
+      <stateTransfer chunkSize="100" fetchInMemoryState="true"/>
+    </clustering>
+  </default>
+
+  <namedCache name="FedoraRepository">
+    <!--
+        Our Infinispan cache needs to be transactional. However, we'll also configure it to
+        use pessimistic locking, which is required whenever applications will be concurrently
+        updating nodes within the same process. If you're not sure, use pessimistic locking.
+     -->
+    <clustering mode="replication">
+      <sync/>
+      <stateTransfer chunkSize="100" fetchInMemoryState="true"/>
+    </clustering>
+
+    <locking concurrencyLevel="1000" lockAcquisitionTimeout="15000" useLockStriping="false" />
+
+    <deadlockDetection enabled="true" spinDuration="1000"/>
+
+
+    <eviction maxEntries="500"  strategy="LIRS" threadPolicy="DEFAULT"/>
+
+    <transaction
+        transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"
+        transactionMode="TRANSACTIONAL" lockingMode="PESSIMISTIC"/>
+    <!--
+        Define the cache loaders (i.e., cache stores). Passivation is false because we want *all*
+        data to be persisted, not just what doesn't fit into memory. Shared is false because there
+        are no other caches sharing this file store. We set preload to false for lazy loading;
+        may be improved by preloading and configuring eviction.
+
+        We can have multiple cache loaders, which get chained. But we'll define just one.
+     -->
+    <persistence passivation="false">
+      <singleFile shared="false"
+                  preload="false"
+                  fetchPersistentState="true"
+                  purgeOnStartup="false"
+                  location="${fcrepo.ispn.repo.cache:target/FedoraRepository/storage}"/>
+    </persistence>
+  </namedCache>
+
+  <namedCache name="FedoraRepositoryMetaData">
+    <!--
+        Our Infinispan cache needs to be transactional. However, we'll also configure it to
+        use pessimistic locking, which is required whenever applications will be concurrently
+        updating nodes within the same process. If you're not sure, use pessimistic locking.
+     -->
+    <clustering mode="replication">
+      <sync/>
+      <stateTransfer chunkSize="100" fetchInMemoryState="true"/>
+    </clustering>
+
+    <locking concurrencyLevel="1000" lockAcquisitionTimeout="15000" useLockStriping="false" />
+
+    <deadlockDetection enabled="true" spinDuration="1000"/>
+
+
+    <eviction maxEntries="500"  strategy="LIRS" threadPolicy="DEFAULT"/>
+
+    <transaction
+            transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"
+            transactionMode="TRANSACTIONAL" lockingMode="PESSIMISTIC"/>
+    <!--
+        Define the cache loaders (i.e., cache stores). Passivation is false because we want *all*
+        data to be persisted, not just what doesn't fit into memory. Shared is false because there
+        are no other caches sharing this file store. We set preload to false for lazy loading;
+        may be improved by preloading and configuring eviction.
+
+        We can have multiple cache loaders, which get chained. But we'll define just one.
+     -->
+    <persistence passivation="false">
+      <singleFile shared="false"
+                  preload="false"
+                  fetchPersistentState="true"
+                  purgeOnStartup="false"
+                  location="${fcrepo.ispn.cache:target/FedoraRepositoryMetaData/storage}"/>
+    </persistence>
+  </namedCache>
+
+  <namedCache name="FedoraRepositoryBinaryData">
+    <!--
+        Our Infinispan cache needs to be transactional. However, we'll also configure it to
+        use pessimistic locking, which is required whenever applications will be concurrently
+        updating nodes within the same process. If you're not sure, use pessimistic locking.
+     -->
+    <clustering mode="distribution">
+      <sync replTimeout="${fcrepo.ispn.replication.timeout:10000}" />
+      <l1 enabled="false" lifespan="0" onRehash="false"/>
+      <hash numOwners="${fcrepo.ispn.numOwners:2}" numSegments="40"/>
+      <stateTransfer chunkSize="100" fetchInMemoryState="true"/>
+    </clustering>
+
+    <locking concurrencyLevel="1000" lockAcquisitionTimeout="15000" useLockStriping="false" />
+
+    <deadlockDetection enabled="true" spinDuration="1000"/>
+
+
+    <eviction maxEntries="100"  strategy="LIRS" threadPolicy="DEFAULT"/>
+
+    <transaction
+            transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"
+            transactionMode="TRANSACTIONAL" lockingMode="PESSIMISTIC"/>
+    <!--
+        Define the cache loaders (i.e., cache stores). Passivation is false because we want *all*
+        data to be persisted, not just what doesn't fit into memory. Shared is false because there
+        are no other caches sharing this file store. We set preload to false for lazy loading;
+        may be improved by preloading and configuring eviction.
+
+        We can have multiple cache loaders, which get chained. But we'll define just one.
+     -->
+    <persistence passivation="false">
+      <singleFile shared="false"
+                  preload="false"
+                  fetchPersistentState="true"
+                  purgeOnStartup="false"
+                  location="${fcrepo.ispn.binary.cache:target/FedoraRepositoryBinaryData/storage}"/>
+    </persistence>
+  </namedCache>
+</infinispan>

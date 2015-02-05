@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.integration.http.api;
 
+import static org.apache.commons.lang.StringUtils.contains;
+import static org.fcrepo.kernel.RdfLexicon.REPOSITORY_NAMESPACE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.util.EntityUtils;
 import org.junit.Test;
 
+/**
+ * <p>FedoraHtmlIT class.</p>
+ *
+ * @author awoods
+ */
 public class FedoraHtmlIT extends AbstractResourceIT {
 
     @Test
@@ -30,53 +37,45 @@ public class FedoraHtmlIT extends AbstractResourceIT {
 
         final HttpGet method = new HttpGet(serverAddress);
         method.addHeader("Accept", "text/html");
-        final HttpResponse response = client.execute(method);
-        assertEquals(200, response.getStatusLine().getStatusCode());
-
+        assertEquals(200, getStatus(method));
     }
 
     @Test
     public void testGetNode() throws Exception {
 
-        final HttpPost postMethod = postObjMethod("FedoraHtmlObject");
-        final HttpResponse postResponse = client.execute(postMethod);
-        assertEquals(201, postResponse.getStatusLine().getStatusCode());
+        final String pid = getRandomUniquePid();
+        createObject(pid);
 
-        final HttpGet method =
-                new HttpGet(serverAddress + "FedoraHtmlObject");
+        final HttpGet method = new HttpGet(serverAddress + pid);
         method.addHeader("Accept", "text/html");
-        final HttpResponse response = client.execute(method);
-        assertEquals(200, response.getStatusLine().getStatusCode());
-
+        assertEquals(200, getStatus(method));
     }
 
     @Test
     public void testGetDatastreamNode() throws Exception {
 
-        final HttpPost postMethod = postObjMethod("FedoraHtmlObject2");
+        final String pid = getRandomUniquePid();
+        createObject(pid);
 
-        final HttpResponse postResponse = client.execute(postMethod);
-        assertEquals(201, postResponse.getStatusLine().getStatusCode());
-
-        final HttpPost postDsMethod =
-                postDSMethod("FedoraHtmlObject2", "ds1", "foo");
-        assertEquals(201, getStatus(postDsMethod));
+        createDatastream(pid, "ds1", "foo");
 
         final HttpGet method =
-                new HttpGet(serverAddress + "FedoraHtmlObject2/ds1");
-        method.addHeader("Accept", "text/html");
-        final HttpResponse response = client.execute(method);
-        assertEquals(200, response.getStatusLine().getStatusCode());
+            new HttpGet(serverAddress + pid + "/ds1");
 
+        method.addHeader("Accept", "text/html");
+        assertEquals(200, getStatus(method));
     }
 
     @Test
-    public void testGetNamespaces() throws Exception {
+    public void testGetTemplate() throws Exception {
+        final String pid = getRandomUniquePid();
+        createObject(pid);
+        addMixin(pid, REPOSITORY_NAMESPACE + "Resource");
 
-        final HttpGet method = new HttpGet(serverAddress + "fcr:namespaces");
+        final HttpGet method = new HttpGet(serverAddress + pid);
         method.addHeader("Accept", "text/html");
-        final HttpResponse response = client.execute(method);
-        assertEquals(200, response.getStatusLine().getStatusCode());
-
+        final HttpResponse response = execute(method);
+        final String html = EntityUtils.toString(response.getEntity());
+        assertTrue(contains(html, "class=\"nt_folder\""));
     }
 }

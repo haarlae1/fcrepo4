@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.fcrepo.kernel.exception;
 /**
  * Exception thrown when the calculated digest does not match the stored digest
  * @author ajs6f
- * @date Mar 10, 2013
+ * @since Mar 10, 2013
  */
 public class InvalidChecksumException extends Exception {
 

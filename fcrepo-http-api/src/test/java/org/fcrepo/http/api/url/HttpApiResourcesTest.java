@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,111 +13,110 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.api.url;
 
 import static com.google.common.collect.ImmutableSet.of;
+import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
+import static org.fcrepo.kernel.FedoraJcrTypes.ROOT;
 import static org.fcrepo.kernel.RdfLexicon.HAS_FIXITY_SERVICE;
-import static org.fcrepo.kernel.RdfLexicon.HAS_NAMESPACE_SERVICE;
-import static org.fcrepo.kernel.RdfLexicon.HAS_SEARCH_SERVICE;
 import static org.fcrepo.kernel.RdfLexicon.HAS_SERIALIZATION;
-import static org.fcrepo.kernel.RdfLexicon.HAS_SITEMAP;
 import static org.fcrepo.kernel.RdfLexicon.HAS_TRANSACTION_SERVICE;
 import static org.fcrepo.kernel.RdfLexicon.HAS_VERSION_HISTORY;
-import static org.fcrepo.kernel.RdfLexicon.HAS_WORKSPACE_SERVICE;
-import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
-import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
-import static org.fcrepo.jcr.FedoraJcrTypes.ROOT;
+import static org.jgroups.util.Util.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
-import static org.modeshape.jcr.api.JcrConstants.JCR_CONTENT;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
-import java.util.HashSet;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.Resource;
 
-import javax.jcr.Node;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import javax.jcr.nodetype.NodeType;
-import javax.ws.rs.core.UriInfo;
-
-import org.fcrepo.http.api.url.HttpApiResources;
-import org.fcrepo.kernel.FedoraResource;
-import org.fcrepo.http.api.FedoraNodes;
-import org.fcrepo.http.commons.api.rdf.HttpGraphSubjects;
-import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.http.commons.api.rdf.HttpResourceConverter;
+import org.fcrepo.kernel.models.FedoraBinary;
+import org.fcrepo.kernel.models.FedoraResource;
+import org.fcrepo.serialization.FedoraObjectSerializer;
 import org.fcrepo.serialization.SerializerUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Resource;
+import javax.jcr.Session;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * <p>HttpApiResourcesTest class.</p>
+ *
+ * @author awoods
+ * @author ajs6f
+ */
 public class HttpApiResourcesTest {
 
     private HttpApiResources testObj;
 
-    @Mock
-    private Node mockNode;
-
-    private FedoraResource mockResource;
-
     private UriInfo uriInfo;
 
-    @Mock
-    private NodeType mockNodeType;
-
-    private GraphSubjects mockSubjects;
+    private HttpResourceConverter mockSubjects;
 
     @Mock
     private SerializerUtil mockSerializers;
 
+    @Mock
+    FedoraObjectSerializer mockSerializer;
+
+    @Mock
+    private Session mockSession;
+
+    @Mock
+    private FedoraResource mockResource;
+
+    @Mock
+    private FedoraBinary mockBinary;
+
     @Before
-    public void setUp() throws NoSuchFieldException {
+    public void setUp() {
         initMocks(this);
         testObj = new HttpApiResources();
-        mockResource = new FedoraResource(mockNode);
         uriInfo = getUriInfoImpl();
-        mockSubjects = new HttpGraphSubjects(mock(Session.class), FedoraNodes.class, uriInfo);
+        mockSubjects = new HttpResourceConverter(mockSession, UriBuilder.fromUri("http://localhost/{path: .*}"));
         setField(testObj, "serializers", mockSerializers);
+        final Set<String> serializerKeySet = new HashSet<>();
+        final String format = "DummyFORMAT";
+        serializerKeySet.add(format);
+        when(mockSerializers.keySet()).thenReturn(serializerKeySet);
+        when(mockSerializers.getSerializer(any(String.class))).thenReturn(mockSerializer);
+        when(mockSerializer.canSerialize(mockResource)).thenReturn(true);
     }
 
     @Test
-    public void shouldDecorateModeRootNodesWithRepositoryWideLinks()
-            throws RepositoryException {
-        when(mockNodeType.isNodeType(ROOT)).thenReturn(true);
-        when(mockNode.getPrimaryNodeType()).thenReturn(mockNodeType);
-        when(mockNode.getPath()).thenReturn("/");
+    public void shouldDecorateModeRootNodesWithRepositoryWideLinks() {
+        when(mockResource.hasType(ROOT)).thenReturn(true);
+        when(mockResource.getPath()).thenReturn("/");
 
-        final Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
+        final Resource graphSubject = mockSubjects.reverse().convert(mockResource);
 
         final Model model =
-                testObj.createModelForResource(mockResource, uriInfo,
-                        mockSubjects);
+            testObj.createModelForResource(mockResource, uriInfo, mockSubjects);
 
-        assertTrue(model.contains(graphSubject, HAS_SEARCH_SERVICE));
-        assertTrue(model.contains(graphSubject, HAS_SITEMAP));
         assertTrue(model.contains(graphSubject, HAS_TRANSACTION_SERVICE));
-        assertTrue(model.contains(graphSubject, HAS_NAMESPACE_SERVICE));
-        assertTrue(model.contains(graphSubject, HAS_WORKSPACE_SERVICE));
     }
 
     @Test
-    public void shouldDecorateNodesWithLinksToVersionsAndExport()
-            throws RepositoryException {
+    public void shouldDecorateNodesWithLinksToVersionsAndExport() {
 
-        when(mockNode.getPrimaryNodeType()).thenReturn(mock(NodeType.class));
-        when(mockNode.getPath()).thenReturn("/some/path/to/object");
+        when(mockResource.isVersioned()).thenReturn(true);
+        when(mockResource.getPath()).thenReturn("/some/path/to/object");
 
         when(mockSerializers.keySet()).thenReturn(of("a", "b"));
-        final Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
+        final Resource graphSubject = mockSubjects.reverse().convert(mockResource);
 
         final Model model =
-                testObj.createModelForResource(mockResource, uriInfo,
-                        mockSubjects);
+            testObj.createModelForResource(mockResource, uriInfo, mockSubjects);
 
         assertTrue(model.contains(graphSubject, HAS_VERSION_HISTORY));
         assertEquals(2, model.listObjectsOfProperty(graphSubject,
@@ -125,19 +124,60 @@ public class HttpApiResourcesTest {
     }
 
     @Test
-    public void shouldDecorateDatastreamsWithLinksToFixityChecks()
-            throws RepositoryException {
-        when(mockNode.hasNode(JCR_CONTENT)).thenReturn(true);
-        when(mockNode.getPrimaryNodeType()).thenReturn(mock(NodeType.class));
-        when(mockNode.getPath()).thenReturn("/some/path/to/datastream");
-        when(mockSerializers.keySet()).thenReturn(new HashSet<String>());
-        final Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
+    public void shouldNotDecorateNodesWithLinksToVersionsUnlessVersionable() {
 
+        when(mockResource.isVersioned()).thenReturn(false);
+        when(mockResource.getPath()).thenReturn("/some/path/to/object");
+
+        when(mockSerializers.keySet()).thenReturn(of("a", "b"));
+        final Resource graphSubject = mockSubjects.reverse().convert(mockResource);
+
+        final Model model =
+                testObj.createModelForResource(mockResource, uriInfo, mockSubjects);
+
+        assertFalse(model.contains(graphSubject, HAS_VERSION_HISTORY));
+    }
+
+    @Test
+    public void shouldDecorateDatastreamsWithLinksToFixityChecks() {
+        when(mockBinary.getPath()).thenReturn("/some/path/to/datastream");
+        when(mockSerializers.keySet()).thenReturn(new HashSet<String>());
+        final Resource graphSubject = mockSubjects.reverse().convert(mockBinary);
+
+        final Model model =
+            testObj.createModelForResource(mockBinary, uriInfo, mockSubjects);
+
+        assertTrue(model.contains(graphSubject, HAS_FIXITY_SERVICE));
+    }
+
+    @Test
+    public void shouldDecorateRootNodeWithCorrectResourceURI() {
+        when(mockResource.hasType(ROOT)).thenReturn(true);
+        when(mockSerializers.keySet()).thenReturn(of("a"));
+        when(mockResource.getPath()).thenReturn("/");
+
+        final Resource graphSubject = mockSubjects.reverse().convert(mockResource);
         final Model model =
                 testObj.createModelForResource(mockResource, uriInfo,
                         mockSubjects);
+        assertEquals("http://localhost/fcrepo/fcr:export?format=a", model
+                .getProperty(graphSubject, HAS_SERIALIZATION).getResource()
+                .getURI());
+    }
 
-        assertTrue(model.contains(graphSubject, HAS_FIXITY_SERVICE));
+    @Test
+    public void shouldDecorateOtherNodesWithCorrectResourceURI() {
+        when(mockSerializers.keySet()).thenReturn(of("a"));
+        when(mockResource.getPath()).thenReturn("/some/path/to/object");
+
+        final Resource graphSubject = mockSubjects.reverse().convert(mockResource);
+        final Model model =
+                testObj.createModelForResource(mockResource, uriInfo,
+                        mockSubjects);
+        assertEquals(
+                "http://localhost/fcrepo/some/path/to/object/fcr:export?format=a",
+                model.getProperty(graphSubject, HAS_SERIALIZATION)
+                        .getResource().getURI());
     }
 
 }

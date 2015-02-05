@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.fcrepo.http.commons.domain;
+
+import static java.lang.Long.parseLong;
+import static java.util.regex.Pattern.compile;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Range header parsing logic
+ *
+ * @author awoods
  */
 public class Range {
 
     private final long start;
+
     private final long end;
+
     private static Pattern rangePattern =
-        Pattern.compile("^bytes\\s*=\\s*(\\d*)\\s*-\\s*(\\d*)");
+        compile("^bytes\\s*=\\s*(\\d*)\\s*-\\s*(\\d*)");
 
     /**
      * Unbounded Range
@@ -57,7 +62,7 @@ public class Range {
 
     /**
      * Does this range actually impose limits
-     * @return
+     * @return true if the range imposes limits
      */
     public boolean hasRange() {
         return !(start == 0 && end == -1);
@@ -65,19 +70,18 @@ public class Range {
 
     /**
      * Length contained in the range
-     * @return
+     * @return length of the range
      */
     public long size() {
         if (end == -1) {
             return -1;
-        } else {
-            return end - start + 1;
         }
+        return end - start + 1;
     }
 
     /**
      * Start of the range
-     * @return
+     * @return start of the range
      */
     public long start() {
         return start;
@@ -85,7 +89,7 @@ public class Range {
 
     /**
      * End of the range
-     * @return
+     * @return end of the range
      */
     public long end() {
         return end;
@@ -94,7 +98,7 @@ public class Range {
     /**
      * Convert an HTTP Range header to a Range object
      * @param source
-     * @return
+     * @return range object
      */
     public static Range convert(final String source) {
 
@@ -105,22 +109,22 @@ public class Range {
         }
 
         matcher.matches();
-        String from = matcher.group(1);
-        String to = matcher.group(2);
+        final String from = matcher.group(1);
+        final String to = matcher.group(2);
 
         final long start;
 
         if (from.equals("")) {
             start = 0;
         } else {
-            start = Long.parseLong(from);
+            start = parseLong(from);
         }
 
         final long end;
         if (to.equals("")) {
             end = -1;
         } else {
-            end = Long.parseLong(to);
+            end = parseLong(to);
         }
 
         return new Range(start, end);

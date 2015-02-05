@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.webxml.bind;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 
+/**
+ * <p>Param class.</p>
+ *
+ * @author awoods
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Param extends Describable {
 
@@ -34,7 +38,7 @@ public class Param extends Describable {
     public Param() {
     }
 
-    public Param(String name, String value) {
+    public Param(final String name, final String value) {
         this.name = name;
         this.value = value;
     }
@@ -48,17 +52,23 @@ public class Param extends Describable {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         if (this.getClass().equals(object.getClass())) {
-            Param that = (Param) object;
-            boolean name =
-                    (this.name == null) ? that.name == null : this.name
-                            .equals(that.name);
-            boolean value =
-                    (this.value == null) ? that.value == null : this.value
-                            .equals(that.value);
+            final Param that = (Param) object;
+            final boolean name =
+                (this.name == null) ? that.name == null : this.name
+                        .equals(that.name);
+            final boolean value =
+                (this.value == null) ? that.value == null : this.value
+                        .equals(that.value);
             return name && value;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode() + 2 * value.hashCode();
+
     }
 }

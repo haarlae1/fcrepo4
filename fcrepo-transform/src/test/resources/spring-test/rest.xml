@@ -15,12 +15,17 @@
 
   <context:annotation-config/>
 
-  <context:component-scan base-package="org.fcrepo.http, org.fcrepo.kernel.services,
-    org.fcrepo.transform.http, org.fcrepo.serialization"/>
+  <context:component-scan base-package="org.fcrepo"/>
 
   <bean class="org.fcrepo.http.commons.session.SessionFactory" />
 
   <!-- Mints PIDs-->
-  <bean class="org.fcrepo.kernel.identifiers.UUIDPidMinter"/>
+  <bean class="org.fcrepo.mint.UUIDPidMinter"/>
+  
+  <!-- Identifier translation chain -->
+  <util:list id="translationChain" value-type="org.fcrepo.kernel.identifiers.InternalIdentifierConverter">
+    <bean class="org.fcrepo.kernel.impl.identifiers.NamespaceConverter"/>
+  </util:list>
+  
 
 </beans>

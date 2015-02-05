@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
  */
 public class FedoraBackupLevelDBIT extends FedoraBackupIT {
 
-    private static final String CACHE_CONFIG_FILE = "fcrepo.infinispan.cache_configuration";
+    private static final String CACHE_CONFIG_FILE = "fcrepo.ispn.configuration";
 
     @BeforeClass
     public static void beforeClass() {

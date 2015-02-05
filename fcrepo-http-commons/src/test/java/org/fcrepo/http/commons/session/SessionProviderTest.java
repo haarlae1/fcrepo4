@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.session;
 
 import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.SecurityContext;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
-import com.sun.jersey.core.spi.component.ComponentContext;
-import com.sun.jersey.spi.inject.Injectable;
-
+/**
+ * <p>SessionProviderTest class.</p>
+ *
+ * @author awoods
+ */
 public class SessionProviderTest {
 
     SessionProvider testObj;
@@ -45,36 +43,23 @@ public class SessionProviderTest {
     private SessionFactory mockSessionFactory;
 
     @Mock
-    private SecurityContext mockSecurityContext;
-
-    @Mock
-    private ComponentContext con;
-
-    @Mock
-    private InjectedSession in;
-
-    @Mock
     private HttpServletRequest mockHttpServletRequest;
 
     @Before
-    public void setUp() throws RepositoryException, NoSuchFieldException {
+    public void setUp() {
         initMocks(this);
         when(mockSessionFactory.getInternalSession()).thenReturn(mockSession);
         when(
-                mockSessionFactory.getSession(mockSecurityContext,
-                        mockHttpServletRequest)).thenReturn(mockSession);
-        testObj = new SessionProvider();
+                mockSessionFactory.getSession(mockHttpServletRequest)).thenReturn(mockSession);
+        testObj = new SessionProvider(mockHttpServletRequest);
         setField(testObj, "sessionFactory", mockSessionFactory);
-        setField(testObj, "secContext", mockSecurityContext);
         setField(testObj, "request", mockHttpServletRequest);
 
     }
 
     @Test
-    public void testGetInjectable() {
-        final Injectable<Session> inj = testObj.getInjectable(con, in);
-        assertNotNull("Didn't get an Injectable<Session>!", inj);
-        assertTrue("Didn't get an InjectableSession!", InjectableSession.class
-                .isAssignableFrom(inj.getClass()));
+    public void testProvide() {
+        final Session inj = testObj.provide();
+        assertNotNull("Didn't get a session", inj);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.fcrepo.kernel.utils;
 
 import static com.google.common.base.Throwables.propagate;
+import static java.util.Collections.singletonMap;
 import static org.apache.commons.codec.binary.Hex.encodeHexString;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -31,7 +32,7 @@ import com.google.common.collect.ImmutableMap;
  * Digest helpers to convert digests (checksums) into URI strings
  * (based loosely on Magnet URIs)
  * @author Chris Beer
- * @date Mar 6, 2013
+ * @since Mar 6, 2013
  */
 public abstract class ContentDigest {
 
@@ -41,13 +42,14 @@ public abstract class ContentDigest {
             .of("SHA-1", "urn:sha1", "SHA1", "urn:sha1");
 
     public static final Map<String, String> schemeToAlgorithm =
-        ImmutableMap.of("urn:sha1", "SHA-1");
+        singletonMap("urn:sha1", "SHA-1");
+    public static final String DEFAULT_ALGORITHM = "SHA-1";
 
     /**
      * Convert a MessageDigest algorithm and checksum value to a URN
      * @param algorithm
      * @param value
-     * @return
+     * @return URI
      */
     public static URI asURI(final String algorithm, final String value) {
         try {
@@ -65,7 +67,7 @@ public abstract class ContentDigest {
      * Convert a MessageDigest algorithm and checksum byte-array data to a URN
      * @param algorithm
      * @param data
-     * @return
+     * @return URI
      */
     public static URI asURI(final String algorithm, final byte[] data) {
         return asURI(algorithm, asString(data));
@@ -74,16 +76,26 @@ public abstract class ContentDigest {
     /**
      * Given a digest URI, get the corresponding MessageDigest algorithm
      * @param digestUri
-     * @return
+     * @return MessageDigest algorithm
      */
-    public static String getAlgorithm(URI digestUri) {
+    public static String getAlgorithm(final URI digestUri) {
+        if (digestUri == null) {
+            return DEFAULT_ALGORITHM;
+        }
         return schemeToAlgorithm
-            .get(digestUri.getScheme() + ":" +
-                 digestUri.getSchemeSpecificPart().split(":", 2)[0]);
+        .get(digestUri.getScheme() + ":" +
+             digestUri.getSchemeSpecificPart().split(":", 2)[0]);
     }
 
     private static String asString(final byte[] data) {
         return encodeHexString(data);
     }
 
+    /**
+     * Placeholder checksum value.
+     * @return URI
+     */
+    public static URI missingChecksum() {
+        return asURI("SHA-1", "missing");
+    }
 }

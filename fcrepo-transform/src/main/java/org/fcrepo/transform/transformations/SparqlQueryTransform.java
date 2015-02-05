@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.transform.transformations;
 
-import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.rdf.model.Model;
+
 import org.apache.commons.io.IOUtils;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.fcrepo.transform.Transformation;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.fcrepo.kernel.rdf.SerializationUtils.unifyDatasetModel;
+import java.util.Objects;
 
 /**
  * SPARQL Query-based transforms
+ *
+ * @author cbeer
  */
-public class SparqlQueryTransform implements Transformation {
+public class SparqlQueryTransform implements Transformation<QueryExecution> {
 
     private final InputStream query;
 
@@ -47,15 +48,15 @@ public class SparqlQueryTransform implements Transformation {
     }
 
     @Override
-    public QueryExecution apply(final Dataset dataset) {
+    public QueryExecution apply(final RdfStream rdfStream) {
 
         try {
-            final Model model = unifyDatasetModel(dataset);
+            final Model model = rdfStream.asModel();
             final Query sparqlQuery =
                 QueryFactory.create(IOUtils.toString(query));
 
             return QueryExecutionFactory.create(sparqlQuery, model);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -66,9 +67,19 @@ public class SparqlQueryTransform implements Transformation {
     }
 
     @Override
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         return other instanceof SparqlQueryTransform &&
                    query.equals(((SparqlQueryTransform)other).getQuery());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getQuery());
+    }
+
+    @Override
+    public SparqlQueryTransform newTransform(final InputStream query) {
+        return new SparqlQueryTransform(query);
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.metrics;
-
-import static org.fcrepo.metrics.RegistryService.getMetrics;
 
 import javax.servlet.annotation.WebListener;
 
@@ -37,17 +34,17 @@ public class MetricsContextListener extends AdminServletContextListener {
 
     /**
      * Get the metrics registry for fcrepo
-     * @return
+     * @return the metrics registry
      */
     @Override
     protected MetricRegistry getMetricRegistry() {
-        return getMetrics();
+        return RegistryService.getInstance().getMetrics();
     }
 
     /**
      * Provide a health-check registry
-     * @todo actually populate the health-check registry with checks
-     * @return
+     * TODO actually populate the health-check registry with checks
+     * @return a new health check registry
      */
     @Override
     protected HealthCheckRegistry getHealthCheckRegistry() {

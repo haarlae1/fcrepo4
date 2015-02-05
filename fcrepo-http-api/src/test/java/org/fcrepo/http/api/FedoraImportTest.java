@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.api;
 
-import static org.fcrepo.http.commons.test.util.PathSegmentImpl.createPathList;
 import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
 import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
-import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 import java.io.InputStream;
 
 import javax.jcr.Node;
 import javax.jcr.Session;
+import javax.jcr.nodetype.NodeType;
 
-import org.fcrepo.http.api.FedoraImport;
 import org.fcrepo.serialization.FedoraObjectSerializer;
 import org.fcrepo.serialization.SerializerUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+/**
+ * <p>FedoraImportTest class.</p>
+ *
+ * @author awoods
+ */
 public class FedoraImportTest {
 
     FedoraImport testObj;
@@ -54,6 +57,9 @@ public class FedoraImportTest {
     @Mock
     private Node mockNode;
 
+    @Mock
+    private NodeType mockNodeType;
+
     @Before
     public void setUp() throws Exception {
         initMocks(this);
@@ -66,13 +72,15 @@ public class FedoraImportTest {
         setField(testObj, "uriInfo", getUriInfoImpl());
         mockSession = mockSession(testObj);
         setField(testObj, "session", mockSession);
+        when(mockNodeType.getName()).thenReturn("nt:folder");
+        when(mockNode.getPrimaryNodeType()).thenReturn(mockNodeType);
     }
 
     @Test
     public void testImportObject() throws Exception {
         when(mockNode.getPath()).thenReturn("/test/object");
         when(mockSession.getNode("/test/object")).thenReturn(mockNode);
-        testObj.importObject(createPathList("test", "object"), "fake-format",
+        testObj.importObject("test/object", "fake-format",
                 mockInputStream);
         verify(mockSerializer).deserialize(mockSession, "/test/object",
                 mockInputStream);
@@ -84,7 +92,7 @@ public class FedoraImportTest {
                 mockSerializer);
         when(mockNode.getPath()).thenReturn("/");
         when(mockSession.getNode("/")).thenReturn(mockNode);
-        testObj.importObject(createPathList(), "fake-format", mockInputStream);
+        testObj.importObject(null, "fake-format", mockInputStream);
         verify(mockSerializer).deserialize(mockSession, "/", mockInputStream);
 
     }

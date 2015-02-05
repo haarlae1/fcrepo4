@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.fcrepo.kernel.observer;
 
+import javax.jcr.Session;
 import javax.jcr.observation.Event;
 
 import com.google.common.base.Predicate;
@@ -22,8 +23,16 @@ import com.google.common.base.Predicate;
 /**
  * Filter JCR events to remove extraneous events
  * @author eddies
- * @date Feb 7, 2013
+ * @author ajs6f
+ * @since Feb 7, 2013
  */
 public interface EventFilter extends Predicate<Event> {
 
+    /**
+     * Return a {@link Predicate} with which to filter JCR {@link Event}s.
+     *
+     * @param session
+     * @return Predicate
+     */
+    Predicate<Event> getFilter(final Session session);
 }

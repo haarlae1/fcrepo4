@@ -3,12 +3,12 @@
   <parent>
     <artifactId>fcrepo</artifactId>
     <groupId>org.fcrepo</groupId>
-    <version>4.0.0-alpha-2-SNAPSHOT</version>
+    <version>4.1.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>fcrepo-serialization</artifactId>
-  <name>${project.artifactId}</name>
+  <name>Fedora Repository Object Serialization Module</name>
   <description>Fedora serialization module</description>
   <packaging>bundle</packaging>
 
@@ -17,7 +17,21 @@
       <groupId>org.fcrepo</groupId>
       <artifactId>fcrepo-kernel</artifactId>
       <version>${project.version}</version>
-      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>xml-apis</groupId>
+      <artifactId>xml-apis</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
     </dependency>
 
     <!-- test gear -->
@@ -25,29 +39,12 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-    </dependency>
-    <!-- Logging: we'll use LogBack (which implements the SLF4J API); ModeShape knows 
-      what to do. -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
     </dependency>
 
-    <!-- This dependency is for compile-time: it keeps this module independent of 
-      any given choice of JAX-RS implementation. It must be _after_ the test gear. Otherwise 
-      it will get loaded during test phase, but because this is just an API, the tests 
-      will not be able to execute. -->
-    <dependency>
-      <groupId>javax</groupId>
-      <artifactId>javaee-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
   </dependencies>
   
   <build>
@@ -55,6 +52,15 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>org.fcrepo.serialization;version=${project.version}</Export-Package>
+            <Import-Package>org.fcrepo.kernel</Import-Package>
+            <Embed-Transitive>true</Embed-Transitive>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>

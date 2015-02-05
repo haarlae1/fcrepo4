@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.webxml.bind;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+/**
+ * <p>Listener class.</p>
+ *
+ * @author awoods
+ */
 @XmlRootElement(namespace = "http://java.sun.com/xml/ns/javaee",
         name = "listener")
 public class Listener extends Displayable {
@@ -26,7 +30,7 @@ public class Listener extends Displayable {
     public Listener() {
     }
 
-    public Listener(String displayName, String className) {
+    public Listener(final String displayName, final String className) {
         this.displayName = displayName;
         this.className = className;
     }
@@ -40,18 +44,23 @@ public class Listener extends Displayable {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         if (object instanceof Listener) {
-            Listener that = (Listener) object;
-            boolean className =
-                    (this.className == null) ? that.className == null
-                            : this.className.equals(that.className);
-            boolean displayName =
-                    (this.displayName == null) ? that.displayName == null
-                            : this.displayName.equals(that.displayName);
+            final Listener that = (Listener) object;
+            final boolean className =
+                (this.className == null) ? that.className == null
+                    : this.className.equals(that.className);
+            final boolean displayName =
+                (this.displayName == null) ? that.displayName == null
+                    : this.displayName.equals(that.displayName);
             return className && displayName;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return className.hashCode() + 2 * displayName.hashCode();
     }
 
 }

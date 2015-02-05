@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,44 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.api;
 
-import static org.fcrepo.http.commons.domain.RDFMediaType.POSSIBLE_RDF_VARIANTS;
-import static org.fcrepo.http.commons.test.util.PathSegmentImpl.createPathList;
 import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
 import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
-import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
-import java.io.IOException;
-
+import javax.jcr.Node;
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import javax.ws.rs.core.MediaType;
+import javax.jcr.nodetype.NodeType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.Variant;
 
-import org.fcrepo.http.api.FedoraVersions;
-import org.fcrepo.kernel.FedoraResource;
-import org.fcrepo.http.commons.api.rdf.HttpGraphSubjects;
+import org.fcrepo.http.commons.api.rdf.HttpResourceConverter;
+import org.fcrepo.kernel.impl.FedoraResourceImpl;
 import org.fcrepo.kernel.services.NodeService;
-import org.fcrepo.http.commons.test.util.TestHelpers;
+import org.fcrepo.kernel.services.VersionService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
-import com.hp.hpl.jena.query.Dataset;
-
+/**
+ * <p>FedoraVersionsTest class.</p>
+ *
+ * @author awoods
+ */
 public class FedoraVersionsTest {
 
     private FedoraVersions testObj;
@@ -58,10 +56,19 @@ public class FedoraVersionsTest {
     @Mock
     private NodeService mockNodes;
 
+    @Mock
+    VersionService mockVersions;
+
+    @Mock
+    private Node mockNode;
+
+    @Mock
+    private NodeType mockNodeType;
+
     private Session mockSession;
 
     @Mock
-    private FedoraResource mockResource;
+    private FedoraResourceImpl mockResource;
 
     @Mock
     private Request mockRequest;
@@ -69,62 +76,53 @@ public class FedoraVersionsTest {
     @Mock
     private Variant mockVariant;
 
-    @Mock
-    private Dataset mockDataset;
+    private String path = "/some/path";
+    private String versionLabel = "someLabel";
 
     @Before
     public void setUp() throws Exception {
         initMocks(this);
-        testObj = new FedoraVersions();
+        testObj = spy(new FedoraVersions(path, versionLabel, ""));
         mockSession = mockSession(testObj);
         setField(testObj, "nodeService", mockNodes);
         setField(testObj, "uriInfo", getUriInfoImpl());
         setField(testObj, "session", mockSession);
+        setField(testObj, "versionService", mockVersions);
+        when(mockResource.getPath()).thenReturn(path);
+        when(mockResource.getNode()).thenReturn(mockNode);
+        when(mockNodeType.getName()).thenReturn("nt:folder");
+        when(mockNode.getPrimaryNodeType()).thenReturn(mockNodeType);
+
+        setField(testObj, "idTranslator",
+                new HttpResourceConverter(mockSession, UriBuilder.fromUri("http://localhost/fcrepo/{path: .*}")));
     }
 
     @Test
-    public void testGetVersionList() throws RepositoryException {
-        final String pid = "FedoraVersioningTest";
-        when(mockRequest.selectVariant(POSSIBLE_RDF_VARIANTS)).thenReturn(
-                mockVariant);
-        when(mockNodes.getObject(any(Session.class), anyString())).thenReturn(
-                mockResource);
-        when(mockResource.getVersionDataset(any(HttpGraphSubjects.class)))
-                .thenReturn(mockDataset);
-        when(mockVariant.getMediaType()).thenReturn(
-                new MediaType("text", "turtle"));
-
-        final Response response =
-                testObj.getVersionList(createPathList(pid), mockRequest,
-                        getUriInfoImpl());
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-    }
-
-    @Test
-    public void testAddVersionLabel() throws RepositoryException {
-        final String pid = "FedoraVersioningTest";
-        final String versionLabel = "FedoraVersioningTest1/fcr:versions/v0.0.1";
-        when(mockNodes.getObject(any(Session.class), anyString())).thenReturn(
-                mockResource);
-
-        final Response response =
-                testObj.addVersionLabel(createPathList(pid), versionLabel);
-        verify(mockResource).addVersionLabel(anyString());
+    public void testRevertToVersion() throws RepositoryException {
+        doReturn(path).when(testObj).unversionedResourcePath();
+        final Response response = testObj.revertToVersion();
+        verify(mockVersions).revertToVersion(mockSession, path, versionLabel);
         assertNotNull(response);
     }
 
+    @Test (expected = PathNotFoundException.class)
+    public void testRevertToVersionFailure() throws RepositoryException {
+        doThrow(PathNotFoundException.class).when(testObj).unversionedResourcePath();
+        testObj.revertToVersion();
+    }
+
     @Test
-    public void testGetVersion() throws RepositoryException, IOException {
-        final String pid = "FedoraVersioningTest";
-        final String versionLabel = "v0.0.1";
-        when(
-                mockNodes.getObject(any(Session.class), any(String.class),
-                        any(String.class))).thenReturn(mockResource);
-        testObj.getVersion(createPathList(pid), versionLabel, TestHelpers
-                .getUriInfoImpl());
-        verify(mockResource).getPropertiesDataset(any(HttpGraphSubjects.class),
-                anyLong(), anyInt());
+    public void testRemoveVersion() throws RepositoryException {
+        doReturn(path).when(testObj).unversionedResourcePath();
+        final Response response = testObj.removeVersion();
+        verify(mockVersions).removeVersion(mockSession, path, versionLabel);
+        assertNotNull(response);
+    }
+
+    @Test (expected = PathNotFoundException.class)
+    public void testRemoveVersionFailure() throws RepositoryException {
+        doThrow(PathNotFoundException.class).when(testObj).unversionedResourcePath();
+        testObj.removeVersion();
     }
 
 }

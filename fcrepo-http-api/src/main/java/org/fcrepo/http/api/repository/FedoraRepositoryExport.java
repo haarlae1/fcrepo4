@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.api.repository;
 
+import org.fcrepo.http.api.FedoraExport;
+import org.springframework.context.annotation.Scope;
+
+import javax.inject.Inject;
 import javax.jcr.Session;
 import javax.ws.rs.Path;
 
-import org.fcrepo.http.api.FedoraImport;
-import org.fcrepo.http.commons.session.InjectedSession;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
 /**
- * This stub is a hack to mount the functionality of FedoraImport at the root of
+ * This stub is a hack to mount the functionality of FedoraExport at the root of
  * this webapp. Without it, the globbing from FedoraNodes would own this path
  * instead.
+ *
+ * @author awoods
+ * @author daines
  */
-@Component
 @Scope("prototype")
 @Path("/fcr:export")
-public class FedoraRepositoryExport extends FedoraImport {
+public class FedoraRepositoryExport extends FedoraExport {
 
-    @InjectedSession
+    @Inject
     protected Session session;
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,94 +15,80 @@
  */
 package org.fcrepo.integration;
 
+import static org.fcrepo.transform.transformations.LDPathTransform.APPLICATION_RDF_LDPATH;
+import static org.junit.Assert.assertEquals;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.UUID;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.util.EntityUtils;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.fcrepo.kernel.services.ObjectService;
-import org.fcrepo.transform.transformations.LDPathTransform;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 
-import javax.jcr.Repository;
-import javax.jcr.Session;
-
-import java.io.ByteArrayInputStream;
-
-import static org.junit.Assert.assertEquals;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
-@ContextConfiguration({"/spring-test/master.xml", "/spring-test/test-container.xml"})
+/**
+ * <p>FedoraTransformIT class.</p>
+ *
+ * @author cbeer
+ */
+@ContextConfiguration({"/spring-test/test-container.xml"})
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 public class FedoraTransformIT extends AbstractResourceIT {
 
-
-    @Autowired
-    Repository repo;
-
-    @Autowired
-    ObjectService objectService;
-
     @Test
-    public void testLdpathWithConfiguredProgram() throws Exception {
+    public void testLdpathWithConfiguredProgram() throws IOException {
 
-        final Session session = repo.login();
-        objectService.createObject(session, "/ldpathConfigTestObject");
-        session.save();
-        session.logout();
-
-        HttpGet postLdpathProgramRequest = new HttpGet(serverAddress + "/ldpathConfigTestObject/fcr:transform/default");
-        HttpResponse response = client.execute(postLdpathProgramRequest);
+        final String pid = UUID.randomUUID().toString();
+        createObject(pid);
+        final HttpGet postLdpathProgramRequest
+                = new HttpGet(serverAddress + "/" + pid + "/fcr:transform/default");
+        final HttpResponse response = client.execute(postLdpathProgramRequest);
         assertEquals(200, response.getStatusLine().getStatusCode());
-        String content = EntityUtils.toString(response.getEntity());
+        final String content = EntityUtils.toString(response.getEntity());
         logger.debug("Retrieved ldpath feed:\n" + content);
 
-        JsonFactory jsonFactory = new JsonFactory();
+        final JsonNode rootNode = new ObjectMapper().readTree(new JsonFactory().createParser(content));
 
-        ObjectMapper mapper = new ObjectMapper();
-        final JsonParser jsonParser = jsonFactory.createJsonParser(content);
-
-        JsonNode rootNode = mapper.readTree(jsonParser);
-
-        assertEquals(serverAddress + "/ldpathConfigTestObject", rootNode.get(0).get("id").getElements().next().asText());
+        assertEquals("Failed to retrieve correct identifier in JSON!", serverAddress + "/" + pid,
+                rootNode.get(0).get("id").elements().next().asText());
 
     }
 
     @Test
     public void testLdpathWithProgramBody() throws Exception {
 
-        final Session session = repo.login();
-        objectService.createObject(session, "/ldpathTestObject");
-        session.save();
-        session.logout();
+        final String pid = UUID.randomUUID().toString();
+        createObject(pid);
 
-        HttpPost postLdpathProgramRequest = new HttpPost(serverAddress + "/ldpathTestObject/fcr:transform");
-        BasicHttpEntity e = new BasicHttpEntity();
+        final HttpPost postLdpathProgramRequest = new HttpPost(serverAddress + "/" + pid + "/fcr:transform");
+        final BasicHttpEntity e = new BasicHttpEntity();
 
-        String s = "id      = . :: xsd:string ;\n";
+        final String s = "id = . :: xsd:string ;\n";
 
         e.setContent(new ByteArrayInputStream(s.getBytes()));
 
         postLdpathProgramRequest.setEntity(e);
-        postLdpathProgramRequest.setHeader("Content-Type", LDPathTransform.APPLICATION_RDF_LDPATH);
-        HttpResponse response = client.execute(postLdpathProgramRequest);
+        postLdpathProgramRequest.setHeader("Content-Type", APPLICATION_RDF_LDPATH);
+        final HttpResponse response = client.execute(postLdpathProgramRequest);
         assertEquals(200, response.getStatusLine().getStatusCode());
-        String content = EntityUtils.toString(response.getEntity());
-        logger.debug("Retrieved ldpath feed:\n" + content);
+        final String content = EntityUtils.toString(response.getEntity());
+        logger.debug("Retrieved LDPath result:\n" + content);
 
-        JsonFactory jsonFactory = new JsonFactory();
+        final JsonNode rootNode = new ObjectMapper().readTree(new JsonFactory().createParser(content));
 
-        ObjectMapper mapper = new ObjectMapper();
-        final JsonParser jsonParser = jsonFactory.createJsonParser(content);
-
-        JsonNode rootNode = mapper.readTree(jsonParser);
-
-        assertEquals(serverAddress + "/ldpathTestObject", rootNode.get(0).get("id").getElements().next().asText());
+        assertEquals("Failed to retrieve correct identifier in JSON!", serverAddress + "/" + pid, rootNode
+                .get(0).get("id").elements().next().asText());
 
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,35 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.jms.observer;
 
 import java.io.IOException;
 
 import javax.jcr.RepositoryException;
-import javax.jcr.observation.Event;
 import javax.jms.JMSException;
 import javax.jms.Message;
 
+import org.fcrepo.kernel.observer.FedoraEvent;
+
 /**
  * Produce a JMS Message from a JCR Event
+ *
+ * @author awoods
  */
 public interface JMSEventMessageFactory {
 
     /**
      * Produce a JMS message from a JCR event with the
      * given session
-     * 
+     *
      * @param jcrEvent
-     * @param jcrSession
      * @param jmsSession
-     * @return
+     * @return JMS message created from a JCR event
      * @throws RepositoryException
      * @throws IOException
      * @throws JMSException
      */
-    Message getMessage(final Event jcrEvent,
-            final javax.jcr.Session jcrSession,
+    Message getMessage(final FedoraEvent jcrEvent,
             final javax.jms.Session jmsSession) throws RepositoryException,
         IOException, JMSException;
 }

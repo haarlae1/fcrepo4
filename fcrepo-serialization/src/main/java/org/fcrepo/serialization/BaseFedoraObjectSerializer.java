@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.serialization;
 
 import java.io.IOException;
@@ -24,14 +23,14 @@ import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
-import org.fcrepo.kernel.FedoraObject;
+import org.fcrepo.kernel.models.FedoraResource;
 import org.fcrepo.kernel.exception.InvalidChecksumException;
-import org.fcrepo.kernel.services.DatastreamService;
-import org.fcrepo.kernel.services.ObjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Auto-wire some helpful services for the FedoraObjectSerializer
+ *
+ * @author cbeer
  */
 public abstract class BaseFedoraObjectSerializer implements
         FedoraObjectSerializer {
@@ -39,19 +38,16 @@ public abstract class BaseFedoraObjectSerializer implements
     @Autowired
     protected Repository repo;
 
-    @Autowired
-    protected ObjectService objService;
-
-    @Autowired
-    protected DatastreamService dsService;
-
     @Override
-    public abstract void serialize(final FedoraObject obj,
-            final OutputStream out) throws RepositoryException, IOException;
+    public abstract void serialize(final FedoraResource obj,
+                                   final OutputStream out,
+                                   final boolean skipBinary,
+                                   final boolean recurse) throws RepositoryException, IOException,
+            InvalidSerializationFormatException;
 
     @Override
     public abstract void deserialize(final Session session, final String path,
             final InputStream stream) throws IOException, RepositoryException,
-        InvalidChecksumException;
+            InvalidChecksumException, InvalidSerializationFormatException;
 
 }

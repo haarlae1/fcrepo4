@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.api.rdf;
 
-import javax.jcr.RepositoryException;
 import javax.ws.rs.core.UriInfo;
 
-import org.fcrepo.kernel.FedoraResource;
-import org.fcrepo.kernel.rdf.GraphSubjects;
+import com.hp.hpl.jena.rdf.model.Resource;
+import org.fcrepo.kernel.models.FedoraResource;
+import org.fcrepo.kernel.identifiers.IdentifierConverter;
 
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
- * Helper to generate an RDF model for a FedoraResource that (likely) creates
+ * Helper to generate an RDF model for a FedoraResourceImpl that (likely) creates
  * relations from our resource to other HTTP components
+ *
+ * @author awoods
  */
 public interface UriAwareResourceModelFactory {
 
@@ -37,11 +38,9 @@ public interface UriAwareResourceModelFactory {
      *
      * @param resource
      * @param uriInfo
-     * @param graphSubjects
-     * @return
-     * @throws RepositoryException
+     * @param idTranslator
+     * @return model containing triples for the given resource
      */
     Model createModelForResource(final FedoraResource resource,
-            final UriInfo uriInfo, GraphSubjects graphSubjects)
-        throws RepositoryException;
+            final UriInfo uriInfo, final IdentifierConverter<Resource,FedoraResource> idTranslator);
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,24 @@
  */
 package org.fcrepo.services;
 
-import static org.fcrepo.metrics.RegistryService.dumpMetrics;
-
-import java.io.PrintStream;
-
+import org.fcrepo.metrics.RegistryService;
+import org.junit.Assert;
 import org.junit.Test;
 
-import com.codahale.metrics.MetricRegistry;
-
+/**
+ * <p>MetricsServiceTest class.</p>
+ *
+ * @author eddies
+ */
 public class MetricsServiceTest {
 
-    MetricRegistry mockMetricRegistry;
-
-    PrintStream mockPrintStream;
-
     @Test
-    public void testDumpMetrics() {
-        dumpMetrics(mockPrintStream);
+    public void testSingletonBranch() {
+        //Create instance
+        final RegistryService serivce0 = RegistryService.getInstance();
+        //Fetches the created instance. Success indicated by branch coverage.
+        final RegistryService service1 = RegistryService.getInstance();
+
+        Assert.assertTrue(serivce0 == service1);
     }
 }

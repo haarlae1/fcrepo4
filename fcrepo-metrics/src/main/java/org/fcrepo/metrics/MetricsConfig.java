@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.metrics;
 
 import static java.lang.Integer.parseInt;
@@ -52,10 +51,12 @@ import com.codahale.metrics.graphite.GraphiteReporter;
 @Configuration
 public class MetricsConfig {
 
+    public static final String METRIC_PREFIX = getProperty("fcrepo.metrics.prefix", "org.fcrepo");
+
     /**
      * Provide the reporter factory to Spring
      * 
-     * @return
+     * @return the reporter factory
      */
     @Bean
     public ReporterFactory reporterFactory() {
@@ -102,8 +103,7 @@ public class MetricsConfig {
         @Bean
         public GraphiteReporter graphiteReporter() {
             final MetricsConfig cfg = new MetricsConfig();
-            final String prefix =
-                    getProperty("fcrepo.metrics.prefix", "org.fcrepo");
+            final String prefix = METRIC_PREFIX;
             return cfg.reporterFactory().getGraphiteReporter(prefix,
                     graphiteClient());
         }
@@ -122,14 +122,13 @@ public class MetricsConfig {
     @Profile({"metrics", "metrics.jmx"})
     public static class JmxConfig {
 
-        String prefix = getProperty("fcrepo.metrics.prefix", "org.fcrepo");
-
         /**
          * @return a Reporter that exposes metrics under the "org.fcrepo" prefix
          */
         @Bean
         public JmxReporter jmxReporter() {
             final MetricsConfig cfg = new MetricsConfig();
+            final String prefix = METRIC_PREFIX;
             return cfg.reporterFactory().getJmxReporter(prefix);
         }
     }

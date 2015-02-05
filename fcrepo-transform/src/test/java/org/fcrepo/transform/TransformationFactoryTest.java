@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.fcrepo.transform;
 
-import org.apache.jena.riot.WebContent;
 import org.fcrepo.transform.transformations.LDPathTransform;
 import org.fcrepo.transform.transformations.SparqlQueryTransform;
 import org.junit.Before;
@@ -23,12 +22,21 @@ import org.junit.Test;
 import org.mockito.Mock;
 
 import javax.ws.rs.core.MediaType;
-import java.io.InputStream;
 
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Map;
+
+import static org.apache.jena.riot.WebContent.contentTypeSPARQLQuery;
+import static org.fcrepo.transform.transformations.LDPathTransform.APPLICATION_RDF_LDPATH;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+/**
+ * <p>TransformationFactoryTest class.</p>
+ *
+ * @author cbeer
+ */
 public class TransformationFactoryTest {
 
     @Mock
@@ -45,7 +53,8 @@ public class TransformationFactoryTest {
     @Test
     public void testLDPathCreation() {
 
-        final Transformation transform = transformationFactory.getTransform(MediaType.valueOf(LDPathTransform.APPLICATION_RDF_LDPATH), mockInputStream);
+        final Transformation<Map<String, Collection<Object>>> transform =
+            transformationFactory.getTransform(MediaType.valueOf(APPLICATION_RDF_LDPATH), mockInputStream);
 
         assertEquals(new LDPathTransform(mockInputStream), transform);
 
@@ -54,19 +63,17 @@ public class TransformationFactoryTest {
     @Test
     public void testSparqlCreation() {
 
-        final Transformation transform = transformationFactory.getTransform(MediaType.valueOf(WebContent.contentTypeSPARQLQuery), mockInputStream);
-
+        final Transformation<Map<String, Collection<Object>>> transform =
+            transformationFactory.getTransform(MediaType.valueOf(contentTypeSPARQLQuery), mockInputStream);
         assertEquals(new SparqlQueryTransform(mockInputStream), transform);
 
     }
 
 
-    @Test
+    @Test(expected = UnsupportedOperationException.class)
     public void testOtherCreation() {
 
-        final Transformation transform = transformationFactory.getTransform(MediaType.valueOf("some/mime-type"), mockInputStream);
-
-        assertNull(transform);
+        transformationFactory.getTransform(MediaType.valueOf("some/mime-type"), mockInputStream);
 
     }
 }

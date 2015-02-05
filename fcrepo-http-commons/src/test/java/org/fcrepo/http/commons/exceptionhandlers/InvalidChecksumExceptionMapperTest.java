@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.exceptionhandlers;
 
 import static javax.ws.rs.core.Response.Status.CONFLICT;
@@ -21,11 +20,15 @@ import static org.junit.Assert.assertEquals;
 
 import javax.ws.rs.core.Response;
 
-import org.fcrepo.http.commons.exceptionhandlers.InvalidChecksumExceptionMapper;
 import org.fcrepo.kernel.exception.InvalidChecksumException;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * <p>InvalidChecksumExceptionMapperTest class.</p>
+ *
+ * @author awoods
+ */
 public class InvalidChecksumExceptionMapperTest {
 
     private InvalidChecksumExceptionMapper testObj;
@@ -37,8 +40,8 @@ public class InvalidChecksumExceptionMapperTest {
 
     @Test
     public void testToResponse() {
-        InvalidChecksumException input = new InvalidChecksumException("x didn't match y");
-        Response actual = testObj.toResponse(input);
+        final InvalidChecksumException input = new InvalidChecksumException("x didn't match y");
+        final Response actual = testObj.toResponse(input);
         assertEquals(CONFLICT.getStatusCode(), actual.getStatus());
     }
 }

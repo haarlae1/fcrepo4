@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.webxml.bind;
 
-import java.util.Collections;
+import static java.util.Collections.emptyList;
+
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 
+/**
+ * <p>Filter class.</p>
+ *
+ * @author awoods
+ */
 public class Filter extends Displayable {
 
     @XmlElements(value = {@XmlElement(
@@ -47,9 +52,11 @@ public class Filter extends Displayable {
         return this.filterClass;
     }
 
-    @SuppressWarnings("unchecked")
     public List<InitParam> initParams() {
-        return (initParams != null) ? initParams : Collections.EMPTY_LIST;
+        if (initParams != null) {
+            return initParams;
+        }
+        return emptyList();
     }
 
 }

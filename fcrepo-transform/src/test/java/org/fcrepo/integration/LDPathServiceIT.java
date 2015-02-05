@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.integration;
 
-import static org.fcrepo.kernel.RdfLexicon.REPOSITORY_NAMESPACE;
-import static org.fcrepo.kernel.RdfLexicon.RESTAPI_NAMESPACE;
-import org.apache.marmotta.ldpath.exception.LDPathParseException;
-import org.fcrepo.kernel.FedoraObject;
-import org.fcrepo.kernel.rdf.impl.DefaultGraphSubjects;
+import com.hp.hpl.jena.rdf.model.Resource;
+import org.fcrepo.kernel.models.Container;
+import org.fcrepo.kernel.impl.rdf.impl.DefaultIdentifierTranslator;
+import org.fcrepo.kernel.impl.rdf.impl.PropertiesRdfContext;
+import org.fcrepo.kernel.services.ContainerService;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.fcrepo.transform.transformations.LDPathTransform;
-import org.fcrepo.kernel.services.ObjectService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -36,22 +37,30 @@ import javax.jcr.Session;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.List;
 
+import static org.fcrepo.kernel.RdfLexicon.REPOSITORY_NAMESPACE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 
+/**
+ * <p>LDPathServiceIT class.</p>
+ *
+ * @author cbeer
+ */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({"/spring-test/master.xml"})
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 public class LDPathServiceIT {
 
     @Inject
     Repository repo;
 
     @Inject
-    ObjectService objectService;
+    ContainerService containerService;
     private LDPathTransform testObj;
 
     @Before
@@ -60,13 +69,13 @@ public class LDPathServiceIT {
     }
 
     @Test
-    public void shouldDoStuff() throws RepositoryException, LDPathParseException {
-        Session session = repo.login();
+    public void shouldDoStuff() throws RepositoryException {
+        final Session session = repo.login();
 
-        final FedoraObject object = objectService.createObject(session, "/testObject");
+        final Container object = containerService.findOrCreate(session, "/testObject");
         object.getNode().setProperty("dc:title", "some-title");
 
-        String s = "@prefix dc : <http://purl.org/dc/terms/>\n" +
+        final String s = "@prefix dces : <http://purl.org/dc/elements/1.1/>\n" +
                        "@prefix fcrepo : <" + REPOSITORY_NAMESPACE + ">\n" +
                            "id      = . :: xsd:string ;\n" +
                            "title = dc:title :: xsd:string ;\n" +
@@ -75,19 +84,25 @@ public class LDPathServiceIT {
 
         testObj = new LDPathTransform(stringReader);
 
-        final List<Map<String, Collection<Object>>> list = testObj.apply(object.getPropertiesDataset(new DefaultGraphSubjects(session)));
+        final DefaultIdentifierTranslator subjects = new DefaultIdentifierTranslator(session);
+        final Resource topic = subjects.reverse().convert(object);
+        final RdfStream triples = object.getTriples(subjects, PropertiesRdfContext.class)
+                                        .topic(topic.asNode());
+        final List<Map<String, Collection<Object>>> list = testObj.apply(triples);
 
-        assert(list != null);
-        assertEquals(1, list.size());
-        Map<String, Collection<Object>> stuff = list.get(0);
+        assertNotNull("Failed to retrieve results!", list);
 
-        assertTrue(stuff.containsKey("id"));
-        assertTrue(stuff.containsKey("title"));
+        assertTrue("List didn't contain a result", list.size() == 1);
 
-        assertEquals(1, stuff.get("id").size());
-        assertEquals(RESTAPI_NAMESPACE + "/testObject",
-                stuff.get("id").iterator().next());
-        assertEquals("some-title", stuff.get("title").iterator().next());
-        assertEquals(object.getNode().getIdentifier(), stuff.get("uuid").iterator().next());
+        final Map<String, Collection<Object>> stuff = list.get(0);
+
+        assertTrue("Results didn't contain an identifier!", stuff.containsKey("id"));
+        assertTrue("Results didn't contain a title!", stuff.containsKey("title"));
+
+        assertEquals("Received more than one identifier!", 1, stuff.get("id").size());
+        assertEquals("Got wrong subject in identifier!", subjects.toDomain("/testObject").getURI(), stuff.get(
+                "id").iterator().next());
+        assertEquals("Got wrong title!", "some-title", stuff.get("title").iterator().next());
+        assertEquals("Got wrong UUID!", object.getNode().getIdentifier(), stuff.get("uuid").iterator().next());
     }
 }

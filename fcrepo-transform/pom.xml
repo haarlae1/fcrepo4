@@ -1,24 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <artifactId>fcrepo</artifactId>
     <groupId>org.fcrepo</groupId>
-    <version>4.0.0-alpha-2-SNAPSHOT</version>
+    <version>4.1.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
+  <properties>
+    <ldpath.version>3.2.1</ldpath.version>
+  </properties>
+
 
   <artifactId>fcrepo-transform</artifactId>
-  <name>${project.artifactId}</name>
-  <description>Fedora Transform</description>
+  <name>Fedora Repository RDF Transformations Module</name>
+  <description>The Fedora Commons repository transformations module: Provides facilities to use SPARQL or LDPath to tranform repository RDF into desired forms.</description>
   <packaging>bundle</packaging>
 
   <dependencies>
 
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-kernel</artifactId>
+      <artifactId>fcrepo-kernel-impl</artifactId>
       <version>${project.version}</version>
       <exclusions>
         <exclusion>
@@ -36,7 +38,6 @@
       </exclusions>
     </dependency>
 
-
     <dependency>
       <groupId>org.fcrepo</groupId>
       <artifactId>fcrepo-http-commons</artifactId>
@@ -53,30 +54,12 @@
     <dependency>
       <groupId>org.apache.marmotta</groupId>
       <artifactId>ldpath-core</artifactId>
-      <version>3.1.0-incubating-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.marmotta</groupId>
       <artifactId>ldpath-backend-jena</artifactId>
-      <version>3.1.0-incubating-SNAPSHOT</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.jena</groupId>
-          <artifactId>jena-core</artifactId>
-        </exclusion>
-
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
-
 
     <dependency>
       <groupId>org.springframework</groupId>
@@ -99,8 +82,22 @@
     </dependency>
 
     <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-spring</artifactId>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-cachestore-leveldb</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-configs</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-auth-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -116,41 +113,65 @@
     </dependency>
 
     <dependency>
-      <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-kernel</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.glassfish.grizzly</groupId>
       <artifactId>grizzly-http-server</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.grizzly</groupId>
       <artifactId>grizzly-http-servlet</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-grizzly2</artifactId>
-      <scope>test</scope>
+      <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+      <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-spring3</artifactId>
+      <scope>test</scope>
+      <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-common</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <version>${jersey.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
 
-
-    <dependency>
-      <groupId>javax.mail</groupId>
-      <artifactId>mail</artifactId>
-      <scope>test</scope>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-annotations</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-core</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.3.3</version>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-json</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.3.3</version>
     </dependency>
 
     <!-- This dependency is for compile-time: it keeps this module independent
@@ -161,6 +182,10 @@
       <groupId>javax</groupId>
       <artifactId>javaee-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+    </dependency>
 
   </dependencies>
   <build>
@@ -168,6 +193,19 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>org.fcrepo.transform;version=${project.version}</Export-Package>
+            <Import-Package>
+              org.fcrepo.kernel.impl,
+              org.fcrepo.http.commons,
+              org.fcrepo.http.api
+            </Import-Package>
+            <Embed-Transitive>true</Embed-Transitive>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -180,4 +218,45 @@
 
   </build>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.marmotta</groupId>
+        <artifactId>ldpath-core</artifactId>
+        <version>${ldpath.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.marmotta</groupId>
+        <artifactId>ldpath-backend-jena</artifactId>
+        <version>${ldpath.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-core</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.fcrepo</groupId>
+        <artifactId>fcrepo-jcr-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 </project>

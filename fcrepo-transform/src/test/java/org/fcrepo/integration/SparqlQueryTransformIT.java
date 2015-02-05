@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,73 +13,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.integration;
-
-import static org.fcrepo.kernel.RdfLexicon.REPOSITORY_NAMESPACE;
 
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.ResultSet;
-import org.apache.marmotta.ldpath.exception.LDPathParseException;
-import org.fcrepo.kernel.FedoraObject;
-import org.fcrepo.kernel.rdf.impl.DefaultGraphSubjects;
-import org.fcrepo.kernel.services.ObjectService;
+import org.fcrepo.kernel.models.Container;
+import org.fcrepo.kernel.impl.rdf.impl.DefaultIdentifierTranslator;
+import org.fcrepo.kernel.impl.rdf.impl.PropertiesRdfContext;
+import org.fcrepo.kernel.services.ContainerService;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.fcrepo.transform.transformations.SparqlQueryTransform;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.inject.Inject;
-import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import static org.fcrepo.kernel.RdfLexicon.REPOSITORY_NAMESPACE;
 import static org.junit.Assert.assertTrue;
 
 
+/**
+ * <p>SparqlQueryTransformIT class.</p>
+ *
+ * @author cbeer
+ */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({"/spring-test/master.xml"})
-public class SparqlQueryTransformIT {
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
+public class SparqlQueryTransformIT extends AbstractResourceIT {
 
     @Inject
-    Repository repo;
-
-    @Inject
-    ObjectService objectService;
+    ContainerService containerService;
     private SparqlQueryTransform testObj;
 
-    @Before
-    public void setUp() {
-
-    }
-
     @Test
-    public void shouldDoStuff() throws RepositoryException, LDPathParseException {
-        Session session = repo.login();
+    public void shouldDoStuff() throws RepositoryException {
+        final Session session = repo.login();
 
-        final FedoraObject object = objectService.createObject(session, "/testObject");
+        final Container object = containerService.findOrCreate(session, "/testObject");
 
-        String s = "SELECT ?x ?uuid\n" +
+        final String s = "SELECT ?x ?uuid\n" +
                 "WHERE { ?x  <" + REPOSITORY_NAMESPACE + "uuid> ?uuid }";
         final InputStream stringReader = new ByteArrayInputStream(s.getBytes());
 
         testObj = new SparqlQueryTransform(stringReader);
 
-        final QueryExecution qexec = testObj.apply(object.getPropertiesDataset(new DefaultGraphSubjects(session)));
-
-        assert(qexec != null);
-
-        try {
+        final RdfStream stream = object.getTriples(new DefaultIdentifierTranslator(session),
+                PropertiesRdfContext.class);
+        try (final QueryExecution qexec = testObj.apply(stream)) {
+            assert (qexec != null);
             final ResultSet results = qexec.execSelect();
-
-            assert(results != null);
+            assert (results != null);
             assertTrue(results.hasNext());
-        } finally {
-            qexec.close();
         }
     }
 }

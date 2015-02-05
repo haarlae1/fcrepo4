@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 package org.fcrepo.kernel.exception;
 
-import javax.jcr.RepositoryException;
-
 /**
  * A transaction was not found in the transaction registry
+ *
+ * @author awoods
  */
-public class TransactionMissingException extends RepositoryException {
+public class TransactionMissingException extends RepositoryRuntimeException {
 
     private static final long serialVersionUID = 2139084821001303830L;
 

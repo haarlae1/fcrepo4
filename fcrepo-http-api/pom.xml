@@ -4,15 +4,33 @@
   <parent>
     <groupId>org.fcrepo</groupId>
     <artifactId>fcrepo</artifactId>
-    <version>4.0.0-alpha-2-SNAPSHOT</version>
+    <version>4.1.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>fcrepo-http-api</artifactId>
-  <name>${project.artifactId}</name>
-  <description>Fedora HTTP API</description>
+  <name>Fedora Repository HTTP API Module</name>
+  <description>The Fedora Commons repository HTTP API: Provides a RESTful HTTP API to interact with the Fedora Commons repository.</description>
   <packaging>bundle</packaging>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.fcrepo</groupId>
+        <artifactId>fcrepo-jcr-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+    <dependency>
+      <groupId>org.modeshape</groupId>
+      <artifactId>modeshape-jcr</artifactId>
+      <version>${modeshape.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.modeshape</groupId>
       <artifactId>modeshape-web-jcr</artifactId>
@@ -26,7 +44,20 @@
 
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-kernel</artifactId>
+      <artifactId>fcrepo-kernel-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-mint</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-connector-file</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -37,28 +68,70 @@
     </dependency>
 
     <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-json</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-multipart</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.dropwizard.metrics</groupId>
+      <artifactId>metrics-annotation</artifactId>
+      <version>${metrics.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.grizzly</groupId>
+      <artifactId>grizzly-http-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.grizzly</groupId>
+      <artifactId>grizzly-http-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+      <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-common</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-multipart</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+
+
     <!-- test gear -->
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-kernel</artifactId>
+      <artifactId>fcrepo-kernel-impl</artifactId>
       <version>${project.version}</version>
-      <classifier>tests</classifier>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-configs</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -69,38 +142,25 @@
       <type>test-jar</type>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.grizzly</groupId>
-      <artifactId>grizzly-http-server</artifactId>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-auth-common</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.grizzly</groupId>
-      <artifactId>grizzly-http-servlet</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-grizzly2</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-grizzly2-servlet</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>javax.mail</groupId>
-      <artifactId>mail</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-spring</artifactId>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-spring3</artifactId>
+      <scope>test</scope>
+      <version>${jersey.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -117,6 +177,11 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-cachestore-leveldb</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -144,6 +209,36 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>
+              org.fcrepo.http.api;version=${project.version},
+              org.fcrepo.http.api.repository;version=${project.version},
+              org.fcrepo.http.api.responses;version=${project.version},
+              org.fcrepo.http.api.url;version=${project.version}
+            </Export-Package>
+            <Import-Package>
+              org.fcrepo.kernel.impl,
+              org.fcrepo.kernel.impl.rdf,
+              org.fcrepo.kernel.impl.utils,
+              org.fcrepo.kernel.impl.utils.impl,
+              org.fcrepo.kernel.impl.utils.iterators,
+              org.fcrepo.kernel.impl.utils.infinispan,
+              org.fcrepo.auth.common,
+              org.fcrepo.mint,
+              org.fcrepo.serialization,
+              org.fcrepo.http.commons.api.rdf,
+              org.fcrepo.http.commons.domain,
+              org.fcrepo.http.commons.domain.ldp,
+              org.fcrepo.http.commons.responses,
+              org.fcrepo.http.commons.session,
+              org.fcrepo.connector.filesystem,
+              org.modeshape.connector.filesystem
+            </Import-Package>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>

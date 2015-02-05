@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,39 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.integration;
 
+import static java.lang.Integer.MAX_VALUE;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>SanityCheckIT class.</p>
+ *
+ * @author fasseg
+ */
 public class SanityCheckIT {
 
     /**
      * The server port of the application, set as system property by
      * maven-failsafe-plugin.
      */
-    private static final String SERVER_PORT = System.getProperty("test.port");
+    private static final String SERVER_PORT = System.getProperty("fcrepo.test.port");
 
     /**
     * The context path of the application (including the leading "/"), set as
     * system property by maven-failsafe-plugin.
     */
     private static final String CONTEXT_PATH = System
-            .getProperty("test.context.path");
+            .getProperty("fcrepo.test.context.path");
 
     protected Logger logger;
 
@@ -59,16 +61,12 @@ public class SanityCheckIT {
     protected static final String serverAddress = "http://" + HOSTNAME + ":" +
             SERVER_PORT + CONTEXT_PATH;
 
-    protected static final PoolingClientConnectionManager connectionManager =
-            new PoolingClientConnectionManager();
-
     protected static HttpClient client;
 
     static {
-        connectionManager.setMaxTotal(Integer.MAX_VALUE);
-        connectionManager.setDefaultMaxPerRoute(5);
-        connectionManager.closeIdleConnections(3, TimeUnit.SECONDS);
-        client = new DefaultHttpClient(connectionManager);
+        client =
+                HttpClientBuilder.create().setMaxConnPerRoute(MAX_VALUE)
+                        .setMaxConnTotal(MAX_VALUE).build();
     }
 
     @Test

@@ -1,57 +1,104 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.fcrepo</groupId>
     <artifactId>fcrepo</artifactId>
-    <version>4.0.0-alpha-2-SNAPSHOT</version>
+    <version>4.1.1-SNAPSHOT</version>
   </parent>
-
   <artifactId>fcrepo-kernel</artifactId>
-  <name>${project.artifactId}</name>
-  <description>The Fedora Repository kernel</description>
+  <name>Fedora Repository Kernel API</name>
+  <description>Fedora Repository Kernel API, containing types and constants for working with Fedora 4</description>
+
   <packaging>bundle</packaging>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>
+              org.fcrepo.kernel;version=${project.version},
+              org.fcrepo.kernel.exception;version=${project.version},
+              org.fcrepo.kernel.identifiers;version=${project.version},
+              org.fcrepo.kernel.observer;version=${project.version},
+              org.fcrepo.kernel.observer.eventmappings;version=${project.version},
+              org.fcrepo.kernel.models;version=${project.version},
+              org.fcrepo.kernel.services;version=${project.version},
+              org.fcrepo.kernel.services.functions;version=${project.version},
+              org.fcrepo.kernel.services.policies;version=${project.version},
+              org.fcrepo.kernel.utils;version=${project.version},
+              org.fcrepo.kernel.utils.iterators;version=${project.version}
+            </Export-Package>
+            <Embed-Transitive>true</Embed-Transitive>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.fcrepo</groupId>
+        <artifactId>fcrepo-jcr-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
-    <dependency>
-      <groupId>javax.inject</groupId>
-      <artifactId>javax.inject</artifactId>
-    </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-core</artifactId>
+      <version>${jena.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-jcr</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-metrics</artifactId>
-      <version>${project.version}</version>
-    </dependency>	
     <dependency>
       <groupId>org.apache.jena</groupId>
-      <artifactId>apache-jena-libs</artifactId>
-      <type>pom</type>
+      <artifactId>jena-arq</artifactId>
+      <version>${jena.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
+      <groupId>javax.jcr</groupId>
+      <artifactId>jcr</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.modeshape</groupId>
+      <artifactId>modeshape-jcr-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-api</artifactId>
     </dependency>
 
     <!-- test gear -->
@@ -60,44 +107,13 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.4</version>
-    </dependency>
-    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
-
-
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
 </project>

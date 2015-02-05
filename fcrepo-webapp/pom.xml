@@ -3,17 +3,17 @@
   <parent>
     <groupId>org.fcrepo</groupId>
     <artifactId>fcrepo</artifactId>
-    <version>4.0.0-alpha-2-SNAPSHOT</version>
+    <version>4.1.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>fcrepo-webapp</artifactId>
-  <name>${project.artifactId}</name>
+  <name>Fedora Repository Deployable Web Application</name>
   <description>The Fedora web application</description>
   <packaging>war</packaging>
 
   <properties>
     <!-- integration test properties -->
-    <test.context.path>/</test.context.path>
+    <fcrepo.test.context.path>/</fcrepo.test.context.path>
     
     <!-- jmeter -->
     <jmeter.loop_count>100</jmeter.loop_count>
@@ -24,7 +24,25 @@
   
     <!-- sonar -->
     <sonar.artifact.path>${project.build.directory}${file.separator}${project.artifactId}-${project.version}.war</sonar.artifact.path>
+
+    <build.timestamp>${maven.build.timestamp}</build.timestamp>
+    <maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
+    <!-- for standalone operation -->
+    <jetty.version>8.1.13.v20130916</jetty.version>
+    <jetty.users.file>${project.build.directory}/test-classes/jetty-users.properties</jetty.users.file>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.fcrepo</groupId>
+        <artifactId>fcrepo-jcr-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -33,12 +51,7 @@
     </dependency>
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-kernel</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-audit</artifactId>
+      <artifactId>fcrepo-kernel-impl</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -48,13 +61,14 @@
     </dependency>
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-generator-dc</artifactId>
+      <artifactId>fcrepo-http-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-http-api</artifactId>
+      <artifactId>fcrepo-configs</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.fcrepo</groupId>
@@ -63,21 +77,86 @@
     </dependency>
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-auth-oauth</artifactId>
+      <artifactId>fcrepo-auth-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.fcrepo</groupId>
-      <artifactId>fcrepo-storage-policy</artifactId>
+      <artifactId>fcrepo-mint</artifactId>
       <version>${project.version}</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-spring</artifactId>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-connector-file</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${jetty.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.dropwizard.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
+      <version>${metrics.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.dropwizard.metrics</groupId>
+      <artifactId>metrics-servlets</artifactId>
+      <version>${metrics.version}</version>
+
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-spring3</artifactId>
+      <version>${jersey.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>xml-apis</groupId>
+      <artifactId>xml-apis</artifactId>
+      <version>1.4.01</version>
     </dependency>
 
     <!-- test gear -->
@@ -85,23 +164,164 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-cachestore-leveldb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sourceforge.htmlunit</groupId>
+      <artifactId>htmlunit</artifactId>
+      <scope>test</scope>
+      <version>${htmlunit.version}</version>
 
+      <exclusions>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-http</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-util</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>xml-apis</groupId>
+          <artifactId>xml-apis</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>net.sourceforge.htmlunit</groupId>
+      <artifactId>htmlunit-core-js</artifactId>
+      <scope>test</scope>
+      <version>${htmlunit.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient-cache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-http-commons</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+
+    <!-- This dependency is for compile-time: it keeps this module independent
+      of any given choice of JAX-RS implementation. It must be _after_ the test
+      gear. Otherwise it will get loaded during test phase, but because this is
+      just an API, the tests will not be able to execute. -->
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.jcr</groupId>
+      <artifactId>jcr</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    
   </dependencies>
-
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${project.build.directory}/maven-shared-archive-resources</directory>
+      </resource>
+    </resources>
     <plugins>
+      <plugin>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>process-remote-resources</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <resourceBundles>
+            <resourceBundle>org.fcrepo:fcrepo-configs:${project.version}</resourceBundle>
+          </resourceBundles>
+        </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
           <attachClasses>true</attachClasses>
+          <webResources>
+            <resource>
+              <directory>src/main/webapp</directory>
+              <filtering>true</filtering>
+              <includes>
+                <include>index.html</include>
+              </includes>
+            </resource>
+          </webResources>
+            <archive>
+              <index>true</index>
+              <manifest>
+                <addClasspath>true</addClasspath>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+            </archive>
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.simplericity.jettyconsole</groupId>
+        <artifactId>jetty-console-maven-plugin</artifactId>
+        <version>1.52</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>createconsole</goal>
+            </goals>
+            <configuration>
+              <backgroundImage>${basedir}/src/main/jettyconsole/fedora_logo_10in.png</backgroundImage>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+        <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <test.port>${test.port}</test.port>
-            <test.context.path>${test.context.path}</test.context.path>
+            <fcrepo.test.port>${fcrepo.test.port}</fcrepo.test.port>
+            <fcrepo.test.context.path>${fcrepo.test.context.path}</fcrepo.test.context.path>
+            <fcrepo.jms.port>${fcrepo.jms.port}</fcrepo.jms.port>
+            <fcrepo.stomp.port>${fcrepo.stomp.port}</fcrepo.stomp.port>
+            <integration-test>true</integration-test>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -110,12 +330,47 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <configuration>
           <portNames>
-            <portName>test.port</portName>
+            <portName>fcrepo.test.port</portName>
             <!-- reserves the stop port for jetty-maven-plugin -->
             <portName>jetty.port.stop</portName>
+            <portName>fcrepo.jms.port</portName>
+            <portName>fcrepo.stomp.port</portName>
           </portNames>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0-alpha-2</version>
+        <executions>
+          <execution>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>set-system-properties</goal>
+            </goals>
+            <configuration>
+              <properties>
+                <property>
+                  <name>fcrepo.jms.port</name>
+                  <value>${fcrepo.jms.port}</value>
+                </property>
+
+                <property>
+                  <name>fcrepo.stomp.port</name>
+                  <value>${fcrepo.stomp.port}</value>
+                </property>
+
+                <property>
+                  <name>integration-test</name>
+                  <value>true</value>
+                </property>
+              </properties>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
@@ -123,35 +378,14 @@
           <loginServices>
             <loginService implementation="org.eclipse.jetty.security.HashLoginService">
               <name>fcrepo</name>
-              <config>${project.build.directory}/test-classes/jetty-users.properties</config>
+              <config>${jetty.users.file}</config>
             </loginService>
           </loginServices>
           <scanIntervalSeconds>2</scanIntervalSeconds>
           <stopKey>STOP</stopKey>
           <webApp>
-            <contextPath>${test.context.path}</contextPath>
+            <contextPath>${fcrepo.test.context.path}</contextPath>
           </webApp>
-
-          <systemProperties>
-
-            <systemProperty>
-              <name>
-                com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.default.objectStoreDir
-              </name>
-              <value>${project.build.directory}/object-store-default</value>
-            </systemProperty>
-
-            <systemProperty>
-              <name>com.arjuna.ats.arjuna.objectstore.objectStoreDir</name>
-              <value>${project.build.directory}/object-store</value>
-            </systemProperty>
-
-            <systemProperty>
-              <name>fcrepo.activemq.dir</name>
-              <value>${project.build.directory}/active-mq</value>
-            </systemProperty>
-
-          </systemProperties>
 
         </configuration>
         <executions>
@@ -165,12 +399,47 @@
             <configuration>
               <connectors>
                 <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
-                  <port>${test.port}</port>
+                  <port>${fcrepo.test.port}</port>
                   <maxIdleTime>60000</maxIdleTime>
                 </connector>
               </connectors>
               <daemon>true</daemon>
               <stopPort>${jetty.port.stop}</stopPort>
+
+              <systemProperties>
+                <systemProperty>
+                  <name>fcrepo.jms.port</name>
+                  <value>${fcrepo.jms.port}</value>
+                </systemProperty>
+
+                <systemProperty>
+                  <name>fcrepo.stomp.port</name>
+                  <value>${fcrepo.stomp.port}</value>
+                </systemProperty>
+
+                <systemProperty>
+                  <name>integration-test</name>
+                  <value>true</value>
+                </systemProperty>
+
+                <systemProperty>
+                  <name>
+                    com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean.default.objectStoreDir
+                  </name>
+                  <value>${project.build.directory}/object-store-default</value>
+                </systemProperty>
+
+                <systemProperty>
+                  <name>com.arjuna.ats.arjuna.objectstore.objectStoreDir</name>
+                  <value>${project.build.directory}/object-store</value>
+                </systemProperty>
+
+                <systemProperty>
+                  <name>fcrepo.activemq.directory</name>
+                  <value>${project.build.directory}/active-mq</value>
+                </systemProperty>
+              </systemProperties>
+
             </configuration>
           </execution>
           <execution>
@@ -184,6 +453,26 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>1.2</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <doCheck>false</doCheck>
+          <doUpdate>false</doUpdate>
+          <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+          <shortRevisionLength>8</shortRevisionLength>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -212,7 +501,7 @@
                 <jmeter.exit.check.pause>${jmeter.exit.check.pause}</jmeter.exit.check.pause>
               </propertiesJMeter>
               <propertiesUser>
-                <fedora_4_port>${test.port}</fedora_4_port>
+                <fedora_4_port>${fcrepo.test.port}</fedora_4_port>
                 <fedora_4_context>rest</fedora_4_context>
                 <loop_count>${jmeter.loop_count}</loop_count>
                 <num_threads>${jmeter.num_threads}</num_threads>

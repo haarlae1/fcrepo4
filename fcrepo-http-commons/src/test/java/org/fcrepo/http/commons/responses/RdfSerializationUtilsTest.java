@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,85 +13,75 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.responses;
 
-import static com.hp.hpl.jena.graph.Node.ANY;
-import static com.hp.hpl.jena.graph.NodeFactory.createLiteral;
+import static com.google.common.collect.ImmutableList.copyOf;
+import static com.google.common.collect.ImmutableList.of;
 import static com.hp.hpl.jena.graph.NodeFactory.createURI;
 import static com.hp.hpl.jena.rdf.model.ModelFactory.createDefaultModel;
-import static org.fcrepo.http.commons.responses.RdfSerializationUtils.RFC2822DATEFORMAT;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createProperty;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createResource;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createTypedLiteral;
 import static org.fcrepo.http.commons.responses.RdfSerializationUtils.getFirstValueForPredicate;
-import static org.fcrepo.http.commons.responses.RdfSerializationUtils.lastModifiedPredicate;
-import static org.fcrepo.http.commons.responses.RdfSerializationUtils.setCachingHeaders;
+import static org.fcrepo.http.commons.responses.RdfSerializationUtils.getAllValuesForPredicate;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
-import java.util.Calendar;
+import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.PathSegment;
+import javax.ws.rs.core.UriInfo;
 
-import org.joda.time.DateTime;
-import org.junit.Test;
-
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.DatasetFactory;
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.sparql.core.DatasetImpl;
-import com.hp.hpl.jena.sparql.util.Context;
-import com.hp.hpl.jena.sparql.util.Symbol;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
 
+/**
+ * <p>RdfSerializationUtilsTest class.</p>
+ *
+ * @author awoods
+ */
 public class RdfSerializationUtilsTest {
 
-    Dataset testData = new DatasetImpl(createDefaultModel());
+    private final UriInfo info = Mockito.mock(UriInfo.class);
 
-    {
-        testData.asDatasetGraph().getDefaultGraph().add(
-                new Triple(createURI("test:subject"),
-                        createURI("test:predicate"),
-                        createLiteral("test:object")));
+    private final Model testData = createDefaultModel();
 
+    private PathSegment segment;
+
+    @Before
+    public void setup() {
+        testData.add(createResource("test:subject"),
+                createProperty("test:predicate"),
+                createTypedLiteral("test:object"));
+        testData.add(createResource("test:subject"),
+                createProperty("test:anotherPredicate"),
+                createTypedLiteral("test:object1"));
+        testData.add(createResource("test:subject"),
+                 createProperty("test:anotherPredicate"),
+                 createTypedLiteral("test:object2"));
+        final List<PathSegment> segments = new ArrayList<>();
+        segment = Mockito.mock(PathSegment.class);
+        segments.add(segment);
+        Mockito.when(info.getPathSegments()).thenReturn(segments);
     }
 
     @Test
     public void testGetFirstValueForPredicate() {
         final String foundValue =
-                getFirstValueForPredicate(testData, ANY,
-                        createURI("test:predicate"));
-        assertEquals("Didn't find correct value for predicate!", foundValue,
-                "test:object");
+            getFirstValueForPredicate(testData, createURI("test:subject"), createURI("test:predicate"));
+        assertEquals("Didn't find correct value for predicate!", "test:object", foundValue);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    public void testSetCachingHeaders() {
-        final MultivaluedMap<?, ?> headers = new MultivaluedMapImpl();
-        setCachingHeaders((MultivaluedMap<String, Object>) headers, testData);
-        assertTrue(headers.get("Cache-Control").size() > 0);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testSetCachingHeadersWithLastModified() {
-        final MultivaluedMap<?, ?> headers = new MultivaluedMapImpl();
-
-        final Model m = createDefaultModel();
-
-        final Calendar c = Calendar.getInstance();
-        m.add(m.createResource("test:subject"), m
-                .createProperty(lastModifiedPredicate.getURI()), m
-                .createTypedLiteral(c));
-        final Dataset testDatasetWithLastModified = DatasetFactory.create(m);
-        final Context context = testDatasetWithLastModified.getContext();
-        context.set(Symbol.create("uri"), "test:subject");
-
-        setCachingHeaders((MultivaluedMap<String, Object>) headers,
-                testDatasetWithLastModified);
-        assertTrue(new DateTime(c).withMillisOfSecond(0).isEqual(
-                RFC2822DATEFORMAT.parseDateTime((String) headers.get(
-                        "Last-Modified").get(0))));
+    public void testGetAllValuesForPredicate() {
+        final Iterator<String> foundValues =
+            getAllValuesForPredicate(testData, createURI("test:subject"),
+                createURI("test:anotherPredicate"));
+        assertEquals("Didn't find correct values for predicate!", copyOf(foundValues),
+            of("test:object1", "test:object2"));
     }
 
 }

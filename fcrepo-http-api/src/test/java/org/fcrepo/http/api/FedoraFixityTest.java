@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.api;
 
-import static org.fcrepo.http.commons.test.util.PathSegmentImpl.createPathList;
 import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
-import static org.fcrepo.http.commons.test.util.TestHelpers.mockDatastream;
 import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
-import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
-
-import java.io.IOException;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -35,22 +31,24 @@ import javax.jcr.Session;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
-import org.fcrepo.http.api.FedoraFixity;
-import org.fcrepo.kernel.Datastream;
-import org.fcrepo.kernel.rdf.GraphSubjects;
-import org.fcrepo.kernel.services.DatastreamService;
+import org.fcrepo.kernel.models.FedoraBinary;
+import org.fcrepo.kernel.identifiers.IdentifierConverter;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+/**
+ * <p>FedoraFixityTest class.</p>
+ *
+ * @author awoods
+ * @author ajs6f
+ */
 public class FedoraFixityTest {
 
     FedoraFixity testObj;
 
-    @Mock
-    private DatastreamService mockDatastreams;
-
-    Session mockSession;
+    private Session mockSession;
 
     private UriInfo uriInfo;
 
@@ -60,31 +58,32 @@ public class FedoraFixityTest {
     @Mock
     private Node mockNode;
 
+    @Mock
+    private FedoraBinary mockBinary;
+
+    private final String externalPath = "objects/FedoraDatastreamsTest1/testDS";
+
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws RepositoryException {
         initMocks(this);
-        testObj = new FedoraFixity();
-        setField(testObj, "datastreamService", mockDatastreams);
+        testObj = spy(new FedoraFixity(externalPath));
         this.uriInfo = getUriInfoImpl();
         setField(testObj, "uriInfo", uriInfo);
         mockSession = mockSession(testObj);
         setField(testObj, "session", mockSession);
+        when(mockNode.getSession()).thenReturn(mockSession);
+        when(mockBinary.getPath()).thenReturn(externalPath);
+        doReturn(mockBinary).when(testObj).getResourceFromPath(externalPath);
     }
 
     @Test
-    public void testGetDatastreamFixity() throws RepositoryException,
-            IOException {
-        final String pid = "FedoraDatastreamsTest1";
-        final String path = "/objects/" + pid + "/testDS";
-        final String dsId = "testDS";
-        final Datastream mockDs = mockDatastream(pid, dsId, null);
-        when(mockNode.getSession()).thenReturn(mockSession);
-        when(mockDs.getNode()).thenReturn(mockNode);
-        when(mockDatastreams.getDatastream(mockSession, path)).thenReturn(
-                mockDs);
-        testObj.getDatastreamFixity(createPathList("objects", pid, "testDS"),
-                mockRequest, uriInfo);
-        verify(mockDatastreams).getFixityResultsModel(any(GraphSubjects.class),
-                eq(mockDs));
+    public void testGetDatastreamFixity() {
+        final RdfStream expected = new RdfStream();
+
+        when(mockBinary.getFixity(any(IdentifierConverter.class))).thenReturn(expected);
+
+        final RdfStream actual = testObj.getDatastreamFixity();
+
+        assertEquals(expected, actual);
     }
 }

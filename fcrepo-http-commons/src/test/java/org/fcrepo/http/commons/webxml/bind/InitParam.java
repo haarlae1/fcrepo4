@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.webxml.bind;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+/**
+ * <p>InitParam class.</p>
+ *
+ * @author awoods
+ */
 @XmlRootElement(namespace = "http://java.sun.com/xml/ns/javaee",
         name = "init-param")
 public class InitParam extends Param {
@@ -26,7 +30,7 @@ public class InitParam extends Param {
         super();
     }
 
-    public InitParam(String name, String value) {
+    public InitParam(final String name, final String value) {
         super(name, value);
     }
 

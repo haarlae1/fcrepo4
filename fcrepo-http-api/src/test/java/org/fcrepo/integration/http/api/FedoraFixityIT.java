@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,62 +13,112 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.integration.http.api;
 
+import static com.hp.hpl.jena.graph.Node.ANY;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createPlainLiteral;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createResource;
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createTypedLiteral;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static org.fcrepo.kernel.RdfLexicon.HAS_FIXITY_RESULT;
+import static org.fcrepo.kernel.RdfLexicon.HAS_FIXITY_STATE;
+import static org.fcrepo.kernel.RdfLexicon.HAS_MESSAGE_DIGEST;
+import static org.fcrepo.kernel.RdfLexicon.HAS_SIZE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import org.apache.http.HttpEntity;
+import java.io.IOException;
+import java.util.Iterator;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.fcrepo.kernel.RdfLexicon;
-import org.fcrepo.http.commons.test.util.TestHelpers;
+import org.fcrepo.http.commons.domain.RDFMediaType;
 import org.junit.Test;
 
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.update.GraphStore;
 
+/**
+ * <p>FedoraFixityIT class.</p>
+ *
+ * @author awoods
+ */
 public class FedoraFixityIT extends AbstractResourceIT {
 
     @Test
     public void testCheckDatastreamFixity() throws Exception {
-        final HttpPost objMethod = postObjMethod("FedoraDatastreamsTest11");
-        assertEquals(201, getStatus(objMethod));
-        final HttpPost method1 =
-                postDSMethod("FedoraDatastreamsTest11", "zxc", "foo");
-        assertEquals(201, getStatus(method1));
-        final HttpGet method2 =
-                new HttpGet(serverAddress +
-                        "FedoraDatastreamsTest11/zxc/fcr:fixity");
-        method2.setHeader("Accept", "application/n3");
-        final HttpResponse response = execute(method2);
-        assertEquals(200, response.getStatusLine().getStatusCode());
-        final HttpEntity entity = response.getEntity();
-        final GraphStore graphStore =
-                TestHelpers.parseTriples(entity.getContent());
+        final String pid = getRandomUniquePid();
 
-        logger.info("Got triples {}", graphStore);
+        createObject(pid);
+        createDatastream(pid, "zxc", "foo");
 
-        assertTrue(graphStore.contains(Node.ANY, Node.ANY,
-                RdfLexicon.IS_FIXITY_RESULT_OF.asNode(), ResourceFactory
-                        .createResource(
-                                serverAddress +
-                                        "FedoraDatastreamsTest11/zxc")
-                        .asNode()));
-        assertTrue(graphStore.contains(Node.ANY, Node.ANY,
-                RdfLexicon.HAS_FIXITY_STATE.asNode(), ResourceFactory
-                        .createPlainLiteral("SUCCESS").asNode()));
+        final HttpGet method = new HttpGet(serverAddress + pid + "/zxc/fcr:fixity");
+        final GraphStore graphStore = getGraphStore(method);
+        logger.debug("Got triples {}", graphStore);
 
-        assertTrue(graphStore.contains(Node.ANY, Node.ANY,
-                RdfLexicon.HAS_COMPUTED_CHECKSUM.asNode(),
-                ResourceFactory.createResource(
+        assertTrue(graphStore.contains(ANY,
+                                          createResource(serverAddress + pid + "/zxc").asNode(),
+                                          HAS_FIXITY_RESULT.asNode(),
+                                          ANY
+                ));
+        assertTrue(graphStore.contains(ANY, ANY, HAS_FIXITY_STATE.asNode(),
+                createPlainLiteral("SUCCESS").asNode()));
+
+        assertTrue(graphStore.contains(ANY, ANY,
+                HAS_MESSAGE_DIGEST.asNode(), createResource(
                         "urn:sha1:0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
                         .asNode()));
-        assertTrue(graphStore.contains(Node.ANY, Node.ANY,
-                RdfLexicon.HAS_COMPUTED_SIZE.asNode(), ResourceFactory
-                        .createTypedLiteral(3).asNode()));
+        assertTrue(graphStore.contains(ANY, ANY, HAS_SIZE.asNode(),
+                createTypedLiteral(3).asNode()));
+    }
+
+    @Test
+    public void testResponseContentTypes() throws Exception {
+        final String pid = getRandomUniquePid();
+        createObject(pid);
+        createDatastream(pid, "zxc", "foo");
+
+        for (final String type : RDFMediaType.POSSIBLE_RDF_RESPONSE_VARIANTS_STRING) {
+            final HttpGet method =
+                    new HttpGet(serverAddress + pid + "/zxc/fcr:fixity");
+
+            method.addHeader("Accept", type);
+            assertEquals(type, getContentType(method));
+        }
+    }
+
+    @Test
+    public void testBinaryVersionFixity() throws Exception {
+        final String pid = getRandomUniquePid();
+
+        createObject(pid);
+        createDatastream(pid, "dsid", "foo");
+
+        logger.debug("Creating binary content version v0 ...");
+        postVersion(pid + "/dsid", "v0");
+
+        final HttpGet method = new HttpGet(serverAddress + pid + "/dsid/fcr%3aversions/v0/fcr:fixity");
+        final GraphStore graphStore = getGraphStore(method);
+        logger.debug("Got binary content versioned fixity triples {}", graphStore);
+        final Iterator<Quad> stmtIt = graphStore.find(ANY, ANY, HAS_FIXITY_RESULT.asNode(), ANY);
+        assertTrue(stmtIt.hasNext());
+        assertTrue(graphStore.contains(ANY, ANY, HAS_FIXITY_STATE.asNode(),
+                createPlainLiteral("SUCCESS").asNode()));
+
+        assertTrue(graphStore.contains(ANY, ANY, HAS_MESSAGE_DIGEST.asNode(), ANY));
+        assertTrue(graphStore.contains(ANY, ANY, HAS_SIZE.asNode(),
+                createTypedLiteral(3).asNode()));
+    }
+
+    private static void postVersion(final String path, final String label) throws IOException {
+        logger.debug("Posting version");
+        final HttpPost postVersion = postObjMethod(path + "/fcr:versions");
+        postVersion.addHeader("Slug", label);
+        final HttpResponse response = execute(postVersion);
+        assertEquals(NO_CONTENT.getStatusCode(), response.getStatusLine().getStatusCode() );
+        final String locationHeader = response.getFirstHeader("Location").getValue();
+        assertNotNull( "No version location header found", locationHeader );
     }
 }

@@ -17,9 +17,9 @@
     },
     "externalSources" : {
       "fileSystem" : {
-        "classname" : "org.modeshape.connector.filesystem.FileSystemConnector",
+        "classname" : "org.fcrepo.connector.file.FedoraFileSystemConnector",
         "directoryPath" : "target/test-classes/test-objects",
-        "readonly" : false,
+        "readonly" : true,
         "extraPropertiesStorage": "json",
         "cacheTtlSeconds" : 5,
         "projections" : [ "default:/files => /" ]
@@ -31,7 +31,7 @@
             "useOnFailedLogin" : false
         },
         "providers" : [
-            { "classname" : "org.fcrepo.http.commons.session.BypassSecurityServletAuthenticationProvider" }
+            { "classname" : "org.fcrepo.auth.common.BypassSecurityServletAuthenticationProvider" }
         ]
     },
 	"node-types" : ["fedora-node-types.cnd"]

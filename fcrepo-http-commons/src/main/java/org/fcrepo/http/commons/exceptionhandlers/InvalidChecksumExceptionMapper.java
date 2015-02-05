@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2015 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.exceptionhandlers;
 
 import static javax.ws.rs.core.Response.status;
@@ -30,19 +29,22 @@ import org.slf4j.Logger;
 /**
  *  Translate InvalidChecksumException errors into reasonable
  *  HTTP error codes
+ *
+ * @author awoods
+ * @author ajs6f
+ * @author cbeer
  */
 @Provider
 public class InvalidChecksumExceptionMapper implements
         ExceptionMapper<InvalidChecksumException> {
 
-    private static final Logger logger =
-            getLogger(InvalidChecksumExceptionMapper.class);
+    private static final Logger LOGGER =
+        getLogger(InvalidChecksumExceptionMapper.class);
 
     @Override
-    public Response toResponse(InvalidChecksumException e) {
+    public Response toResponse(final InvalidChecksumException e) {
 
-        logger.warn("InvalidChecksumExceptionMapper intercepted exception: \n",
-                           e);
+        LOGGER.info(e.toString());
 
         return status(CONFLICT).entity(e.getMessage()).build();
     }
